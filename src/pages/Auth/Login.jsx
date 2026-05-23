@@ -1,7 +1,9 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import Button from "../../components/ui/Button";
+import { login } from "../../services/auth";
+import useStore from "../../store/useStore";
 
 const inputStyles =
   "w-full rounded-xl border border-card-border bg-white px-3 py-2 text-sm text-text-main outline-none focus:border-primary";
@@ -13,8 +15,24 @@ const Login = () => {
     formState: { errors },
   } = useForm();
 
-  const submitHandler = (values) => {
-    toast.success(`Welcome back, ${values.email}`);
+  const navigate = useNavigate();
+  const updateProfile = useStore((state) => state.updateProfile);
+
+  const submitHandler = async (values) => {
+    try {
+      const user = await login(values);
+      toast.success(`Welcome back, ${values.email}`);
+      // update global profile
+      updateProfile({
+        name: user.name,
+        email: user.email,
+        role: "Admin Manager",
+        phone: user.phone || "",
+      });
+      navigate("/");
+    } catch (err) {
+      toast.error(err.message || "Login failed");
+    }
   };
 
   return (

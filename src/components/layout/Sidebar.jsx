@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import useStore from "../../store/useStore";
+import { useNavigate } from "react-router-dom";
 
 const menuSections = [
   {
@@ -35,7 +36,8 @@ const menuSections = [
 ];
 
 const Sidebar = () => {
-  const { sidebarCollapsed, sidebarOpen, setSidebarOpen, profile } = useStore();
+  const { sidebarCollapsed, sidebarOpen, setSidebarOpen, profile, logout } = useStore();
+  const navigate = useNavigate();
   const initials = profile.name
     .split(" ")
     .map((part) => part[0])
@@ -118,6 +120,10 @@ const Sidebar = () => {
 
         <button
           type="button"
+          onClick={() => {
+            logout();
+            navigate("/login");
+          }}
           className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white ${
             sidebarCollapsed ? "justify-center" : ""
           }`}

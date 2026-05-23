@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import Button from "../../components/ui/Button";
+import { register as registerUser } from "../../services/auth";
 
 const inputStyles =
   "w-full rounded-xl border border-card-border bg-white px-3 py-2 text-sm text-text-main outline-none focus:border-primary";
@@ -14,8 +15,16 @@ const Register = () => {
     formState: { errors },
   } = useForm();
 
-  const submitHandler = (values) => {
-    toast.success(`Account created for ${values.email}`);
+  const navigate = useNavigate();
+
+  const submitHandler = async (values) => {
+    try {
+      await registerUser(values);
+      toast.success(`Account created for ${values.email}`);
+      navigate("/login");
+    } catch (err) {
+      toast.error(err.message || "Registration failed");
+    }
   };
 
   return (
