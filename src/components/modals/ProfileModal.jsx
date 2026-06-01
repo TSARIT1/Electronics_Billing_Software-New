@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import Button from "../ui/Button";
 
 const inputStyles =
-  "w-full rounded-xl border border-card-border bg-white px-3 py-2 text-sm text-text-main outline-none focus:border-primary";
+  "w-full rounded-xl border border-card-border bg-surface px-3 py-2 text-sm text-text-main outline-none focus:border-primary dark:bg-surface-alt";
 
 const ProfileModal = ({ isOpen, onClose, profile, onSave }) => {
   const {
@@ -29,22 +29,22 @@ const ProfileModal = ({ isOpen, onClose, profile, onSave }) => {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="mx-auto w-full max-w-2xl rounded-2xl bg-white p-7 shadow-2xl"
+              className="mx-auto w-full max-w-2xl overflow-hidden rounded-3xl border border-card-border bg-surface shadow-2xl dark:border-slate-700 dark:bg-surface-alt"
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
           >
-            <div className="mb-6">
+              <div className="bg-gradient-to-r from-primary/10 via-surface to-surface-alt px-7 py-6 dark:from-primary/20 dark:via-surface-alt dark:to-surface">
               <h3 className="text-lg font-semibold text-text-main">
                 Edit Profile
               </h3>
-              <p className="text-sm text-text-muted">
+                <p className="mt-1 text-sm text-text-muted">
                 Update your personal details and save changes.
               </p>
             </div>
 
             <form
-              className="grid max-h-[70vh] grid-cols-1 gap-4 overflow-y-auto pr-1 md:grid-cols-2"
+                className="grid max-h-[70vh] grid-cols-1 gap-4 overflow-y-auto px-7 py-6 pr-1 md:grid-cols-2"
               onSubmit={handleSubmit(submitHandler)}
             >
               <div>

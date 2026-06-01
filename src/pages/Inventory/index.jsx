@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PackagePlus } from "lucide-react";
 import toast from "react-hot-toast";
 import StatCard from "../../components/cards/StatCard";
@@ -7,7 +7,7 @@ import Button from "../../components/ui/Button";
 import SearchInput from "../../components/ui/SearchInput";
 import InventoryTable from "../../components/tables/InventoryTable";
 import AddProductModal from "../../components/modals/AddProductModal";
-import { inventoryProducts, inventoryStats } from "../../data/mockData";
+import { createProduct, listProducts } from "../../services/products";
 
 const tabs = ["All", "Low Stock", "Out of Stock"];
 
@@ -15,22 +15,82 @@ const Inventory = () => {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const formatCurrency = (value) =>
+    `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
+  const loadProducts = async (searchQuery = "") => {
+    setIsLoading(true);
+    try {
+      const data = await listProducts(searchQuery);
+      setProducts(data);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProducts(search);
+  }, [search]);
+
+  const inventoryStats = useMemo(() => {
+    const totalProducts = products.length;
+    const totalStockUnits = products.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const inventoryValue = products.reduce(
+      (sum, item) => sum + (item.quantity || 0) * (item.costPrice || 0),
+      0
+    );
+    const lowStockItems = products.filter(
+      (item) => item.status === "Low" || item.status === "Out of Stock"
+    ).length;
+
+    return [
+      { title: "Total Products", value: String(totalProducts) },
+      { title: "Total Stock Units", value: totalStockUnits.toLocaleString("en-IN") },
+      { title: "Inventory Value", value: formatCurrency(inventoryValue) },
+      { title: "Low Stock Items", value: String(lowStockItems) },
+    ];
+  }, [products]);
 
   const filtered = useMemo(() => {
-    return inventoryProducts.filter((item) => {
-      const matchesSearch =
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.sku.toLowerCase().includes(search.toLowerCase());
+    return products
+      .map((item) => ({
+        ...item,
+        cost: formatCurrency(item.costPrice),
+        stock: item.quantity || 0,
+      }))
+      .filter((item) => {
       const matchesTab =
         activeTab === "All" ||
         (activeTab === "Low Stock" && item.status === "Low") ||
-        (activeTab === "Out of Stock" && item.status === "Critical");
-      return matchesSearch && matchesTab;
+        (activeTab === "Out of Stock" && item.status === "Out of Stock");
+      return matchesTab;
     });
-  }, [search, activeTab]);
+  }, [products, activeTab]);
 
-  const handleSave = () => {
-    toast.success("Product saved successfully");
+  const handleSave = async (values) => {
+    try {
+      await createProduct({
+        name: values.name,
+        brand: values.brand,
+        category: values.category,
+        sku: values.sku,
+        hsn: values.hsn,
+        description: values.description || "",
+        costPrice: Number(values.cost) || 0,
+        price: Number(values.price) || 0,
+        quantity: Number(values.stock) || 0,
+        minStock: Number(values.minStock) || 5,
+      });
+      toast.success("Product saved successfully");
+      await loadProducts(search);
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   return (
@@ -73,6 +133,7 @@ const Inventory = () => {
         </div>
 
         <div className="mt-5">
+          {isLoading && <p className="text-sm text-text-muted">Loading inventory...</p>}
           <InventoryTable data={filtered} />
         </div>
       </Card>

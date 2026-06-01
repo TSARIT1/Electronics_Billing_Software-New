@@ -10,6 +10,7 @@ import Billing from "../pages/Billing";
 import Purchase from "../pages/Purchase";
 import BillHistory from "../pages/BillHistory";
 import Reports from "../pages/Reports";
+import Notifications from "../pages/Notifications";
 
 const AppRoutes = () => (
   <Routes>
@@ -22,6 +23,7 @@ const AppRoutes = () => (
       <Route path="/purchase" element={<Purchase />} />
       <Route path="/bill-history" element={<BillHistory />} />
       <Route path="/reports" element={<Reports />} />
+      <Route path="/notifications" element={<Notifications />} />
     </Route>
   </Routes>
 );

@@ -3,6 +3,7 @@ import {
   Boxes,
   LayoutDashboard,
   LogOut,
+  BellRing,
   ReceiptText,
   ShoppingBag,
   ShoppingCart,
@@ -31,12 +32,13 @@ const menuSections = [
     items: [
       { name: "Bill History", icon: ReceiptText, to: "/bill-history" },
       { name: "Reports", icon: BarChart3, to: "/reports" },
+      { name: "Notifications", icon: BellRing, to: "/notifications" },
     ],
   },
 ];
 
 const Sidebar = () => {
-  const { sidebarCollapsed, sidebarOpen, setSidebarOpen, profile, logout } = useStore();
+  const { sidebarCollapsed, sidebarOpen, setSidebarOpen, profile, logout, darkMode } = useStore();
   const navigate = useNavigate();
   const initials = profile.name
     .split(" ")
@@ -47,24 +49,28 @@ const Sidebar = () => {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-sidebar-start to-sidebar-end text-white shadow-2xl transition-all duration-300 ${
+      className={`fixed left-0 top-0 z-40 h-screen transition-all duration-300 ${
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      } ${sidebarCollapsed ? "lg:w-24" : "lg:w-72"} lg:translate-x-0`}
+      } ${sidebarCollapsed ? "lg:w-24" : "lg:w-72"} lg:translate-x-0 ${
+        darkMode
+          ? "bg-gradient-to-b from-sidebar-start to-sidebar-end text-white shadow-2xl"
+          : "border-r border-card-border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,249,255,0.98))] text-text-main shadow-[0_18px_40px_rgba(15,23,42,0.08)] dark:border-slate-700"
+      }`}
     >
       <div className="flex h-full flex-col px-5 pb-6 pt-6">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15 text-lg font-semibold">
+          <div className={`flex h-10 w-10 items-center justify-center rounded-2xl text-lg font-semibold ${darkMode ? "bg-white/15" : "bg-gradient-to-br from-primary to-primary-dark text-white shadow-glow"}`}>
             ES
           </div>
           {!sidebarCollapsed && (
             <div>
-              <h1 className="text-lg font-semibold">ElectroShop</h1>
-              <p className="text-xs text-white/70">Management System</p>
+              <h1 className={`text-lg font-semibold ${darkMode ? "text-white" : "text-text-main"}`}>ElectroShop</h1>
+              <p className={`text-xs ${darkMode ? "text-white/70" : "text-text-muted"}`}>Management System</p>
             </div>
           )}
         </div>
 
-        <div className="mt-8 flex items-center gap-3 rounded-2xl bg-white/10 p-3">
+        <div className={`mt-8 flex items-center gap-3 rounded-2xl p-3 ${darkMode ? "bg-white/10" : "bg-gradient-to-r from-slate-50 via-white to-indigo-50 ring-1 ring-slate-200/80"}`}>
           {profile.avatarUrl ? (
             <img
               src={profile.avatarUrl}
@@ -72,14 +78,14 @@ const Sidebar = () => {
               className="h-10 w-10 rounded-full object-cover"
             />
           ) : (
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/30 text-xs font-semibold">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold ${darkMode ? "bg-white/30" : "bg-primary/10 text-primary ring-1 ring-primary/15"}`}>
               {initials}
             </div>
           )}
           {!sidebarCollapsed && (
             <div>
-              <p className="text-sm font-semibold">{profile.name}</p>
-              <p className="text-xs text-white/70">{profile.role}</p>
+              <p className={`text-sm font-semibold ${darkMode ? "text-white" : "text-text-main"}`}>{profile.name}</p>
+              <p className={`text-xs ${darkMode ? "text-white/70" : "text-text-muted"}`}>{profile.role}</p>
             </div>
           )}
         </div>
@@ -88,7 +94,7 @@ const Sidebar = () => {
           {menuSections.map((section) => (
             <div key={section.title}>
               {!sidebarCollapsed && (
-                <p className="mb-3 text-xs font-semibold text-white/60">
+                <p className={`mb-3 text-xs font-semibold ${darkMode ? "text-white/60" : "text-text-muted"}`}>
                   {section.title}
                 </p>
               )}
@@ -102,8 +108,12 @@ const Sidebar = () => {
                       className={({ isActive }) =>
                         `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                           isActive
-                            ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-glow"
-                            : "text-white/75 hover:bg-white/10 hover:text-white"
+                            ? darkMode
+                              ? "bg-gradient-to-r from-primary to-primary-dark text-white shadow-glow"
+                              : "bg-primary text-white shadow-glow"
+                            : darkMode
+                              ? "text-white/75 hover:bg-white/10 hover:text-white"
+                              : "text-text-muted hover:bg-white hover:text-text-main hover:shadow-soft"
                         } ${sidebarCollapsed ? "justify-center" : ""}`
                       }
                       onClick={() => setSidebarOpen(false)}
@@ -126,7 +136,7 @@ const Sidebar = () => {
           }}
           className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white ${
             sidebarCollapsed ? "justify-center" : ""
-          }`}
+          } ${darkMode ? "" : "text-text-muted hover:bg-white hover:text-text-main hover:shadow-soft"}`}
         >
           <LogOut size={18} />
           {!sidebarCollapsed && <span>Logout</span>}

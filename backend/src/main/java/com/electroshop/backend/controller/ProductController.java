@@ -18,8 +18,21 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Product>> list() {
-        return ResponseEntity.ok(productService.listAll());
+    public ResponseEntity<List<Product>> list(@RequestParam(value = "search", required = false) String search) {
+        List<Product> products = productService.listAll();
+        if (search == null || search.isBlank()) {
+            return ResponseEntity.ok(products);
+        }
+
+        String query = search.trim().toLowerCase();
+        return ResponseEntity.ok(products.stream()
+            .filter(product -> matches(product.getName(), query)
+                || matches(product.getSku(), query)
+                || matches(product.getBrand(), query)
+                || matches(product.getCategory(), query)
+                || matches(product.getDescription(), query)
+                || matches(product.getHsn(), query))
+            .toList());
     }
 
     @GetMapping("/{id}")
@@ -42,5 +55,9 @@ public class ProductController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         productService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean matches(String value, String query) {
+        return value != null && value.toLowerCase().contains(query);
     }
 }

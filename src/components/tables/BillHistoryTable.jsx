@@ -8,43 +8,47 @@ const statusVariant = (status) => {
   return "neutral";
 };
 
+const buildInvoiceData = (billData) => ({
+  id: billData.id,
+  invoiceNo: billData.invoiceNo || billData.id,
+  customer: billData.customer,
+  date: billData.date,
+  address: billData.address || "",
+  phone: billData.phone || "",
+  mobile: billData.mobile || "",
+  gstin: billData.gstin || "",
+  transporter: billData.transporter || "",
+  vehicleNo: billData.vehicleNo || "",
+  stateCode: billData.stateCode || "",
+  spotDiscount: billData.spotDiscount || "",
+  splSeaDiscount: billData.splSeaDiscount || "",
+  otherDiscount: billData.otherDiscount || "",
+  taxableAmount: billData.taxableAmount || 0,
+  cgst: billData.cgst || 9,
+  sgst: billData.sgst || 9,
+  igst: billData.igst || 0,
+  roundOff: billData.roundOff || 0,
+  items: billData.itemDetails || [
+    {
+      name: billData.itemDescription || `Item (${billData.items} items)`,
+      qty: billData.items || 1,
+      units: billData.units || "Pcs",
+      price:
+        billData.rate ||
+        (billData.total
+          ? Number(String(billData.total).replace(/[^0-9]/g, "")) /
+            (billData.items || 1)
+          : 0),
+      hsnCode: billData.hsnCode || "8517",
+    },
+  ],
+});
+
 const handlePrintBill = async (billData) => {
-  const billForPDF = {
-    id: billData.id,
-    invoiceNo: billData.invoiceNo || billData.id,
-    customer: billData.customer,
-    date: billData.date,
-    address: billData.address || "",
-    phone: billData.phone || "",
-    mobile: billData.mobile || "",
-    gstin: billData.gstin || "",
-    transporter: billData.transporter || "",
-    vehicleNo: billData.vehicleNo || "",
-    stateCode: billData.stateCode || "",
-    spotDiscount: billData.spotDiscount || "",
-    splSeaDiscount: billData.splSeaDiscount || "",
-    otherDiscount: billData.otherDiscount || "",
-    taxableAmount: billData.taxableAmount || 0,
-    cgst: billData.cgst || 9,
-    sgst: billData.sgst || 9,
-    igst: billData.igst || 0,
-    roundOff: billData.roundOff || 0,
-    items: billData.itemDetails || [
-      {
-        name: billData.itemDescription || `Item (${billData.items} items)`,
-        qty: billData.items || 1,
-        units: billData.units || "Pcs",
-        price: billData.rate || (billData.total ? Number(String(billData.total).replace(/[^0-9]/g, "")) / (billData.items || 1) : 0),
-        hsnCode: billData.hsnCode || "8517",
-      }
-    ],
-  };
-  
-  // attempt to use background stationery from public folder
-  await generateBillPDF(billForPDF, '/stationery.jpg');
+  await generateBillPDF(buildInvoiceData(billData), "/stationery.jpg");
 };
 
-const BillHistoryTable = ({ data }) => (
+const BillHistoryTable = ({ data, onView, onExport }) => (
   <div className="overflow-x-auto">
     <table className="w-full min-w-[900px] text-sm">
       <thead className="text-left text-xs font-semibold text-text-muted">
@@ -61,7 +65,7 @@ const BillHistoryTable = ({ data }) => (
       </thead>
       <tbody>
         {data.map((row) => (
-          <tr key={row.id} className="border-t border-card-border">
+          <tr key={row.id} className="border-t border-card-border transition-colors hover:bg-surface-alt dark:hover:bg-surface">
             <td className="py-4 font-medium text-text-main">{row.id}</td>
             <td className="py-4 text-text-muted">{row.customer}</td>
             <td className="py-4 text-text-muted">{row.date}</td>
@@ -75,21 +79,25 @@ const BillHistoryTable = ({ data }) => (
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-card-border text-text-muted hover:text-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-card-border bg-surface text-text-muted hover:text-primary dark:bg-surface-alt"
+                  onClick={() => onView && onView(row)}
+                  title="View invoice"
                 >
                   <Eye size={14} />
                 </button>
                 <button
                   type="button"
                   onClick={() => handlePrintBill(row)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-card-border text-text-muted hover:text-primary transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-card-border bg-surface text-text-muted transition-colors hover:text-primary dark:bg-surface-alt"
                   title="Download PDF"
                 >
                   <Printer size={14} />
                 </button>
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-card-border text-text-muted hover:text-primary"
+                  onClick={() => onExport && onExport(row)}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-card-border bg-surface text-text-muted hover:text-primary dark:bg-surface-alt"
+                  title="Export bill"
                 >
                   <FileText size={14} />
                 </button>

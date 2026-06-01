@@ -8,16 +8,26 @@ import {
   YAxis,
 } from "recharts";
 
+const axisStyle = {
+  fill: "rgb(var(--color-text-muted))",
+  fontSize: 12,
+};
+
 const RevenueLineChart = ({ data }) => (
   <ResponsiveContainer width="100%" height={280}>
     <LineChart data={data}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#E8ECF5" vertical={false} />
-      <XAxis dataKey="name" tickLine={false} axisLine={false} />
-      <YAxis tickLine={false} axisLine={false} />
+      <CartesianGrid
+        strokeDasharray="3 3"
+        stroke="rgb(var(--color-card-border))"
+        vertical={false}
+      />
+      <XAxis dataKey="name" tickLine={false} axisLine={false} tick={axisStyle} />
+      <YAxis tickLine={false} axisLine={false} tick={axisStyle} />
       <Tooltip
         contentStyle={{
           borderRadius: 12,
-          borderColor: "#E8ECF5",
+          borderColor: "rgb(var(--color-card-border))",
+          backgroundColor: "rgb(var(--color-surface))",
           boxShadow: "0 12px 24px rgba(15,23,42,0.08)",
         }}
       />

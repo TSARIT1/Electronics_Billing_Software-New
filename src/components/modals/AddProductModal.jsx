@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import Button from "../ui/Button";
 
 const inputStyles =
-  "w-full rounded-xl border border-card-border bg-white px-3 py-2 text-sm text-text-main outline-none focus:border-primary";
+  "w-full rounded-xl border border-card-border bg-surface px-3 py-2 text-sm text-text-main outline-none focus:border-primary dark:bg-surface-alt";
 
 const AddProductModal = ({ isOpen, onClose, onSave }) => {
   const {
@@ -13,8 +13,8 @@ const AddProductModal = ({ isOpen, onClose, onSave }) => {
     reset,
   } = useForm();
 
-  const submitHandler = (values) => {
-    onSave(values);
+  const submitHandler = async (values) => {
+    await onSave(values);
     reset();
     onClose();
   };
@@ -29,7 +29,7 @@ const AddProductModal = ({ isOpen, onClose, onSave }) => {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-2xl"
+            className="w-full max-w-2xl rounded-2xl bg-surface p-6 shadow-2xl dark:bg-surface-alt"
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}

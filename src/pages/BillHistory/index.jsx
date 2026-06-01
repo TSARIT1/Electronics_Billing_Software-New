@@ -1,35 +1,86 @@
 import { useEffect, useMemo, useState } from "react";
 import { FileDown, ReceiptIndianRupee, RefreshCw } from "lucide-react";
+import toast from "react-hot-toast";
 import StatCard from "../../components/cards/StatCard";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SearchInput from "../../components/ui/SearchInput";
 import BillHistoryTable from "../../components/tables/BillHistoryTable";
-import { billHistory, billHistoryStats } from "../../data/mockData";
+import { listInvoices } from "../../services/invoices";
 
 const BillHistory = () => {
-  const [historyData, setHistoryData] = useState(billHistory);
+  const [historyData, setHistoryData] = useState([]);
+  const [search, setSearch] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    const storedHistory = JSON.parse(localStorage.getItem("billHistory")) || [];
-    if (storedHistory.length > 0) {
-      setHistoryData([...storedHistory, ...billHistory]);
-    }
+    const loadInvoices = async () => {
+      setIsLoading(true);
+      try {
+        const invoices = await listInvoices();
+        const mapped = invoices.map((invoice) => ({
+          id: `INV-${invoice.id}`,
+          customer: invoice.items?.[0]?.name || "Walk-in Customer",
+          date: invoice.createdAt
+            ? new Date(invoice.createdAt).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })
+            : "-",
+          items: invoice.items?.length || 0,
+          total: `₹${Number(invoice.total || 0).toLocaleString("en-IN")}`,
+          payment: "Cash",
+          status: "Paid",
+          invoiceNo: `INV-${invoice.id}`,
+          itemDetails: (invoice.items || []).map((item) => ({
+            name: item.name,
+            qty: item.quantity,
+            units: "Pcs",
+            price: item.price,
+            hsnCode: "8517",
+          })),
+        }));
+        setHistoryData(mapped);
+      } catch (error) {
+        toast.error(error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInvoices();
   }, []);
 
+  const filteredHistory = useMemo(() => {
+    if (!search.trim()) {
+      return historyData;
+    }
+    const query = search.toLowerCase();
+    return historyData.filter(
+      (row) =>
+        row.id.toLowerCase().includes(query) ||
+        row.customer.toLowerCase().includes(query) ||
+        row.date.toLowerCase().includes(query)
+    );
+  }, [historyData, search]);
+
   const totalRevenue = useMemo(() => {
-    return `₹${historyData
+    return `₹${filteredHistory
       .reduce((sum, row) => {
         const numeric = Number(String(row.total).replace(/[^0-9]/g, "")) || 0;
         return sum + numeric;
       }, 0)
       .toLocaleString("en-IN")}`;
-  }, [historyData]);
+  }, [filteredHistory]);
 
   const stats = [
-    { title: "Total Bills", value: String(historyData.length) },
+    { title: "Total Bills", value: String(filteredHistory.length) },
     { title: "Revenue", value: totalRevenue },
-    { title: billHistoryStats[2].title, value: billHistoryStats[2].value },
+    {
+      title: "Returns",
+      value: String(filteredHistory.filter((row) => row.status === "Returned").length),
+    },
   ];
 
   return (
@@ -65,13 +116,18 @@ const BillHistory = () => {
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <SearchInput placeholder="Search bills" />
+          <SearchInput
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search bills"
+          />
           <Button variant="ghost">Export</Button>
         </div>
       </div>
 
       <div className="mt-5">
-        <BillHistoryTable data={historyData} />
+        {isLoading && <p className="text-sm text-text-muted">Loading invoices...</p>}
+        <BillHistoryTable data={filteredHistory} />
       </div>
     </Card>
   </div>

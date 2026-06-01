@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Button from "../ui/Button";
 
 const inputStyles =
-  "w-full rounded-xl border border-card-border bg-white px-3 py-2 text-sm text-text-main outline-none focus:border-primary";
+  "w-full rounded-xl border border-card-border bg-surface px-3 py-2 text-sm text-text-main outline-none focus:border-primary dark:bg-surface-alt";
 
 const BillingFormModal = ({ isOpen, onClose, onSave }) => {
   const {
@@ -42,12 +43,18 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
     },
   });
 
-  const submitHandler = (values) => {
-    if (onSave) {
-      onSave(values);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submitHandler = async (values) => {
+    if (!onSave) return;
+    try {
+      setIsSubmitting(true);
+      await onSave(values);
+      reset();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
     }
-    reset();
-    onClose();
   };
 
   return (
@@ -60,12 +67,12 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl bg-white p-6 shadow-2xl"
+              className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-3xl border border-card-border bg-surface shadow-2xl dark:border-slate-700 dark:bg-surface-alt"
             initial={{ y: 40, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 40, opacity: 0 }}
           >
-            <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+              <div className="mb-6 flex flex-col gap-2 border-b border-card-border bg-gradient-to-r from-primary/10 via-surface to-surface-alt px-6 py-5 md:flex-row md:items-end md:justify-between dark:border-slate-700 dark:from-primary/20 dark:via-surface-alt dark:to-surface">
               <div>
                 <h3 className="text-lg font-semibold text-text-main">New Billing Invoice</h3>
                 <p className="text-sm text-text-muted">
@@ -77,7 +84,7 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
               </Button>
             </div>
 
-            <div className="max-h-[70vh] overflow-y-auto pr-1">
+              <div className="max-h-[70vh] overflow-y-auto px-6 pb-6 pr-1">
               <form
                 className="grid gap-4 md:grid-cols-2"
                 onSubmit={handleSubmit(submitHandler)}
@@ -251,11 +258,11 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
               </div>
 
               <div className="col-span-2 mt-2 flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <Button variant="ghost" onClick={onClose} type="button">
+                <Button variant="ghost" onClick={onClose} type="button" disabled={isSubmitting}>
                   Cancel
                 </Button>
-                <Button variant="primary" type="submit">
-                  Save Bill
+                <Button variant="primary" type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Bill"}
                 </Button>
               </div>
             </form>

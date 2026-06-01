@@ -15,6 +15,21 @@ export const salesOverview = [
   { name: "Sun", sales: 34000 },
 ];
 
+export const monthlySalesOverview = [
+  { name: "Jan", sales: 184000 },
+  { name: "Feb", sales: 196500 },
+  { name: "Mar", sales: 212000 },
+  { name: "Apr", sales: 224500 },
+  { name: "May", sales: 238000 },
+  { name: "Jun", sales: 251500 },
+  { name: "Jul", sales: 266000 },
+  { name: "Aug", sales: 279500 },
+  { name: "Sep", sales: 288000 },
+  { name: "Oct", sales: 301500 },
+  { name: "Nov", sales: 318000 },
+  { name: "Dec", sales: 336500 },
+];
+
 export const categoryBreakdown = [
   { name: "Mobiles", value: 35 },
   { name: "Laptops", value: 28 },
@@ -78,7 +93,7 @@ export const inventoryProducts = [
     cost: "₹1,18,000",
     price: "₹1,49,990",
     stock: 4,
-    status: "Critical",
+    status: "Out of Stock",
   },
 ];
 

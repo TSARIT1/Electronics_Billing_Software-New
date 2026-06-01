@@ -11,8 +11,19 @@ const MainLayout = () => {
     sidebarCollapsed,
     setSidebarOpen,
     setSidebarCollapsed,
+    darkMode,
   } = useStore();
 
+  useEffect(() => {
+    // apply dark class at document root when darkMode changes
+    if (darkMode) {
+      document.documentElement.classList.add("dark");
+      document.documentElement.style.colorScheme = "dark";
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.style.colorScheme = "light";
+    }
+  }, [darkMode]);
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;
@@ -34,7 +45,7 @@ const MainLayout = () => {
   }, [setSidebarOpen, setSidebarCollapsed]);
 
   return (
-    <div className="min-h-screen bg-app-bg text-text-main">
+    <div className="min-h-screen bg-app-bg text-text-main transition-colors duration-200 dark:text-slate-100">
       <Sidebar />
       {sidebarOpen && (
         <button

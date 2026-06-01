@@ -1,91 +1,177 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Printer } from "lucide-react";
+import toast from "react-hot-toast";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import SearchInput from "../../components/ui/SearchInput";
 import InvoicePreview from "../../components/invoice/InvoicePreview";
 import BillingFormModal from "../../components/modals/BillingFormModal";
-import { billingCart, invoiceDetails } from "../../data/mockData";
+import { createInvoice } from "../../services/invoices";
+import { listProducts } from "../../services/products";
 
 const Billing = () => {
   const [search, setSearch] = useState("");
   const [billingFormOpen, setBillingFormOpen] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [billingCart, setBillingCart] = useState([]);
+  const [invoiceDetails, setInvoiceDetails] = useState({
+    invoiceNo: `GST/${new Date().getFullYear()}/${Date.now().toString().slice(-4)}`,
+    date: new Date().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
+    customer: "Walk-in Customer",
+    phone: "",
+    address: "",
+    gstin: "",
+    paymentMode: "Cash",
+  });
 
-  const handleSaveBill = (values) => {
-    const id = values.invoiceNo || `INV-${Date.now().toString().slice(-6)}`;
-    const date = values.date
-      ? new Date(values.date).toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : new Date().toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        });
-    const quantity = values.quantity ? Number(values.quantity) : 1;
-    const rate = values.rate ? Number(values.rate) : 0;
-    const grossAmount = values.grossAmount ? Number(values.grossAmount) : rate * quantity;
-    const netAmount = values.netAmount ? Number(values.netAmount) : grossAmount;
-    const taxableAmount = values.taxableAmount ? Number(values.taxableAmount) : netAmount;
-    const cgstPercent = values.cgst ? Number(values.cgst) : 9;
-    const sgstPercent = values.sgst ? Number(values.sgst) : 9;
-    const igstPercent = values.igst ? Number(values.igst) : 0;
-    const roundOff = values.roundOff ? Number(values.roundOff) : 0;
-    const cgstAmount = taxableAmount * (cgstPercent / 100);
-    const sgstAmount = taxableAmount * (sgstPercent / 100);
-    const igstAmount = taxableAmount * (igstPercent / 100);
-    const computedGrandTotal = taxableAmount + cgstAmount + sgstAmount + igstAmount + roundOff;
-    const totalValue = values.grandTotal || computedGrandTotal || 0;
-    const formattedTotal = `₹${Number(totalValue).toLocaleString("en-IN")}`;
-
-    const newBill = {
-      id,
-      customer: values.purchaser || "Unknown",
-      date,
-      items: quantity,
-      total: formattedTotal,
-      payment: "Cash",
-      status: "Paid",
-      invoiceNo: id,
-      purchaser: values.purchaser || "Unknown",
-      address: values.address || "",
-      phone: values.phone || "",
-      mobile: values.mobile || "",
-      gstin: values.gstin || "",
-      stateCode: values.stateCode || "",
-      transporter: values.transporter || "",
-      vehicleNo: values.vehicleNo || "",
-      spotDiscount: values.spotDiscount || "",
-      splSeaDiscount: values.splSeaDiscount || "",
-      otherDiscount: values.otherDiscount || "",
-      taxableAmount,
-      cgst: cgstPercent,
-      sgst: sgstPercent,
-      igst: igstPercent,
-      roundOff,
-      grossAmount,
-      netAmount,
-      grandTotal: totalValue,
-      itemDetails: [
-        {
-          name: values.itemDescription || "Item",
-          qty: quantity,
-          units: values.units || "Pcs",
-          price: rate,
-          hsnCode: values.hsnCode || "8517",
-          grossAmount,
-        },
-      ],
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await listProducts();
+        setProducts(data);
+        const seeded = data.slice(0, 3).map((product) => ({
+          productId: product.id,
+          name: product.name,
+          qty: 1,
+          price: Number(product.price || 0),
+          gst: 18,
+        }));
+        setBillingCart(seeded);
+      } catch (error) {
+        toast.error(error.message);
+      }
     };
 
-    const storedHistory =
-      JSON.parse(localStorage.getItem("billHistory")) || [];
-    localStorage.setItem(
-      "billHistory",
-      JSON.stringify([newBill, ...storedHistory])
-    );
+    loadProducts();
+  }, []);
+
+  const visibleCart = useMemo(() => {
+    if (!search.trim()) {
+      return billingCart;
+    }
+    const query = search.toLowerCase();
+    return billingCart.filter((item) => item.name.toLowerCase().includes(query));
+  }, [billingCart, search]);
+
+  const handleCheckout = async () => {
+    if (!billingCart.length) {
+      toast.error("No items in cart to checkout.");
+      return;
+    }
+
+    const invoiceItems = billingCart.map((it) => ({ productId: it.productId, quantity: it.qty }));
+    try {
+      const createdInvoice = await createInvoice({ items: invoiceItems });
+      setInvoiceDetails((d) => ({
+        ...d,
+        invoiceNo: `INV-${createdInvoice.id}`,
+        date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+      }));
+
+      const newBill = {
+        id: `INV-${createdInvoice.id}`,
+        customer: invoiceDetails.customer || "Walk-in Customer",
+        date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+        items: invoiceItems.length,
+        total: `₹${Number(createdInvoice.total || 0).toLocaleString("en-IN")}`,
+        payment: invoiceDetails.paymentMode || "Cash",
+        status: "Paid",
+        invoiceNo: `INV-${createdInvoice.id}`,
+        itemDetails: invoiceItems.map((it) => ({
+          name: products.find((p) => p.id === it.productId)?.name || "Item",
+          qty: it.quantity,
+          price: products.find((p) => p.id === it.productId)?.price || 0,
+        })),
+      };
+      const storedHistory = JSON.parse(localStorage.getItem("billHistory")) || [];
+      localStorage.setItem("billHistory", JSON.stringify([newBill, ...storedHistory]));
+
+      toast.success("Checkout completed and invoice saved.");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleClearCart = () => {
+    setBillingCart([]);
+    toast.success("Cart cleared.");
+  };
+
+  const handleSaveBill = async (values) => {
+    // Build invoice items from current billing cart if present
+    const invoiceItems = billingCart.length
+      ? billingCart.map((it) => ({ productId: it.productId, quantity: it.qty }))
+      : (() => {
+          const matchedProduct = products.find(
+            (product) =>
+              product.name?.toLowerCase() === values.itemDescription?.toLowerCase() ||
+              product.sku?.toLowerCase() === values.itemDescription?.toLowerCase()
+          );
+          const fallbackProduct = matchedProduct || products[0];
+          if (!fallbackProduct) {
+            toast.error("No products found. Please add inventory first.");
+            return [];
+          }
+          const quantity = values.quantity ? Number(values.quantity) : 1;
+          return [{ productId: fallbackProduct.id, quantity: quantity }];
+        })();
+
+    if (!invoiceItems || invoiceItems.length === 0) {
+      return;
+    }
+
+    try {
+      const createdInvoice = await createInvoice({ items: invoiceItems });
+
+      // Update local cart and preview with created invoice
+      const firstItemProduct = products.find((p) => p.id === invoiceItems[0].productId);
+      if (firstItemProduct) {
+        setBillingCart((prev) => [
+          {
+            productId: firstItemProduct.id,
+            name: firstItemProduct.name,
+            qty: invoiceItems[0].quantity,
+            price: Number(firstItemProduct.price || 0),
+            gst: 18,
+          },
+          ...prev,
+        ]);
+      }
+
+      setInvoiceDetails((d) => ({
+        ...d,
+        invoiceNo: `INV-${createdInvoice.id}`,
+        date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+        customer: values.purchaser || d.customer,
+        phone: values.phone || values.mobile || d.phone,
+        address: values.address || d.address,
+        gstin: values.gstin || d.gstin,
+      }));
+
+      // persist history locally as well for quick access
+      const newBill = {
+        id: `INV-${createdInvoice.id}`,
+        customer: values.purchaser || "Unknown",
+        date: new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }),
+        items: invoiceItems.length,
+        total: `₹${Number(createdInvoice.total || 0).toLocaleString("en-IN")}`,
+        payment: values.paymentMode || "Cash",
+        status: "Paid",
+        invoiceNo: `INV-${createdInvoice.id}`,
+        itemDetails: invoiceItems.map((it) => ({ name: products.find((p) => p.id === it.productId)?.name || "Item", qty: it.quantity, price: products.find((p) => p.id === it.productId)?.price || 0 })),
+      };
+      const storedHistory = JSON.parse(localStorage.getItem("billHistory")) || [];
+      localStorage.setItem("billHistory", JSON.stringify([newBill, ...storedHistory]));
+
+      toast.success("Invoice saved to backend");
+    } catch (error) {
+      toast.error(error.message);
+      return;
+    }
   };
 
   return (
@@ -142,7 +228,7 @@ const Billing = () => {
                 </tr>
               </thead>
               <tbody>
-                {billingCart.map((item) => (
+                {visibleCart.map((item) => (
                   <tr key={item.name} className="border-t border-card-border">
                     <td className="py-4 font-medium text-text-main">
                       {item.name}
@@ -181,7 +267,12 @@ const Billing = () => {
         </Card>
       </div>
 
-      <InvoicePreview details={invoiceDetails} items={billingCart} />
+      <InvoicePreview
+        details={invoiceDetails}
+        items={visibleCart}
+        onCheckout={handleCheckout}
+        onClearCart={handleClearCart}
+      />
       <BillingFormModal
         isOpen={billingFormOpen}
         onClose={() => setBillingFormOpen(false)}

@@ -5,7 +5,9 @@ import com.electroshop.backend.entity.InvoiceItem;
 import com.electroshop.backend.entity.Product;
 import com.electroshop.backend.repository.InvoiceRepository;
 import com.electroshop.backend.repository.ProductRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,17 +22,53 @@ public class InvoiceService {
     }
 
     public Invoice create(Invoice invoice) {
-        // calculate subtotals and reduce inventory
-        double total = 0.0;
         List<InvoiceItem> items = invoice.getItems();
+        if (items == null || items.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invoice must contain at least one item");
+        }
+
+        double total = 0.0;
         for (InvoiceItem it : items) {
-            Product p = productRepository.findById(it.getProductId()).orElseThrow(() -> new RuntimeException("Product not found"));
-            it.setName(p.getName());
-            it.setPrice(p.getPrice());
-            it.setSubtotal(it.getPrice() * it.getQuantity());
+            if (it == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invoice item cannot be null");
+            }
+
+            if (it.getQuantity() == null || it.getQuantity() <= 0) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invoice item quantity must be greater than zero");
+            }
+
+            Double itemPrice = it.getPrice();
+
+            if (it.getProductId() != null) {
+                Product p = productRepository.findById(it.getProductId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+                Integer availableQuantity = p.getQuantity();
+                if (availableQuantity == null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product stock is not configured");
+                }
+                if (availableQuantity < it.getQuantity()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Insufficient stock for product: " + p.getName());
+                }
+
+                it.setName(p.getName());
+                itemPrice = p.getPrice();
+                it.setPrice(itemPrice);
+                p.setQuantity(availableQuantity - it.getQuantity());
+                productRepository.save(p);
+            } else {
+                if (it.getName() == null || it.getName().isBlank()) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invoice item name is required when productId is not provided");
+                }
+                if (itemPrice == null) {
+                    itemPrice = 0.0;
+                    it.setPrice(itemPrice);
+                }
+            }
+
+            if (it.getSubtotal() == null) {
+                it.setSubtotal(itemPrice * it.getQuantity());
+            }
             total += it.getSubtotal();
-            p.setQuantity(p.getQuantity() - it.getQuantity());
-            productRepository.save(p);
         }
         invoice.setTotal(total);
         return invoiceRepository.save(invoice);

@@ -21,6 +21,8 @@ public class PurchaseOrder {
 
     private String supplier;
 
+    private String status;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     private Double total;
@@ -43,6 +45,14 @@ public class PurchaseOrder {
 
     public void setSupplier(String supplier) {
         this.supplier = supplier;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreatedAt() {

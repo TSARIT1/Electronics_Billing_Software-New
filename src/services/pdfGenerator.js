@@ -19,7 +19,9 @@ export const generateBillPDF = async (billData, backgroundUrl = "/stationery.jpg
   let y = 11;
 
   doc.setFont("times", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
+  
   doc.text(`GSTIN : ${billData.gstin || ""}`, margin + 1, y);
   doc.text("CASH/CREDIT BILL", pageWidth / 2, y, { align: "center" });
   doc.setFont("times", "normal");
@@ -27,14 +29,18 @@ export const generateBillPDF = async (billData, backgroundUrl = "/stationery.jpg
 
   y += 4.5;
   doc.setFont("times", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
+  
   doc.text("LG      Whirlpool", margin + 2, y);
   doc.text("STAR SPS Electronics", pageWidth / 2 - 20, y);
   doc.text("SAMSUNG      SONY", pageWidth - margin - 30, y);
 
   y += 3.5;
   doc.setFont("times", "normal");
-  doc.setFontSize(6.8);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  
   doc.text(
     "Room No 16, 17 & 18, Opp Society Co-op Rural Bank Complex, TB Road, KALIKIRI-517 234, Annamayya Dt. (A.P)",
     pageWidth / 2,
@@ -43,7 +49,9 @@ export const generateBillPDF = async (billData, backgroundUrl = "/stationery.jpg
   );
   y += 3.5;
   doc.setFont("times", "bold");
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(7.2);
+  
   doc.text("Seller for All Electronics", pageWidth / 2, y, { align: "center" });
   y += 3;
   doc.setFont("times", "normal");
@@ -55,7 +63,9 @@ export const generateBillPDF = async (billData, backgroundUrl = "/stationery.jpg
   // Large red invoice number on the right
   doc.setTextColor(180, 0, 0);
   doc.setFont("times", "bold");
-  doc.setFontSize(26);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(28);
+  
   doc.text(invoiceNo, pageWidth - margin - 4, 39, { align: "right" });
   doc.setTextColor(0, 0, 0);
 
@@ -123,7 +133,7 @@ export const generateBillPDF = async (billData, backgroundUrl = "/stationery.jpg
   y += 6.5;
   const tableX = margin;
   const tableTop = y;
-  const headerHeight = 6.5;
+  const headerHeight = 8;
   const tableWidths = [9, 42, 16, 10, 13, 18, 32];
   const headers = ["S.No.", "Item Description", "HSN Code", "Qty.", "Units", "Rate ₹", "Gross Amount ₹"];
 
@@ -142,7 +152,7 @@ export const generateBillPDF = async (billData, backgroundUrl = "/stationery.jpg
 
   const items = Array.isArray(billData.items) ? billData.items : [];
   const visibleRows = Math.max(items.length, 6);
-  const rowHeight = 23;
+  const rowHeight = 20;
   const bodyTop = tableTop + headerHeight;
   const bodyBottom = bodyTop + visibleRows * rowHeight;
 

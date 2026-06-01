@@ -6,6 +6,26 @@
 
 :root {
   color-scheme: light;
+  --color-app-bg: 241 245 253;
+  --color-surface: 255 255 255;
+  --color-surface-alt: 248 251 255;
+  --color-text-main: 15 23 42;
+  --color-text-muted: 71 85 105;
+  --color-card-border: 214 225 239;
+  --color-sidebar-start: 29 23 69;
+  --color-sidebar-end: 79 70 229;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-app-bg: 7 16 39;
+  --color-surface: 15 23 42;
+  --color-surface-alt: 9 16 34;
+  --color-text-main: 226 232 240;
+  --color-text-muted: 148 163 184;
+  --color-card-border: 51 65 85;
+  --color-sidebar-start: 9 16 30;
+  --color-sidebar-end: 67 56 202;
 }
 
 * {
@@ -15,10 +35,21 @@
 body {
   margin: 0;
   font-family: "Poppins", ui-sans-serif, system-ui, -apple-system;
-  background: #f5f7fb;
-  color: #0f172a;
+  background: rgb(var(--color-app-bg));
+  background-image:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.08), transparent 24%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.06), transparent 20%);
+  background-attachment: fixed;
+  color: rgb(var(--color-text-main));
+  transition: background-color 180ms ease, color 180ms ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark body {
+  background-image:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.14), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 22%);
 }
 
 #root {

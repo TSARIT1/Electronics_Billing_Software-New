@@ -3,7 +3,7 @@
 This is a minimal Spring Boot backend for the ElectroShop React frontend. It provides JPA entities, repositories and REST endpoints for auth, products, purchases and invoices.
 
 
-Database: this project can use MySQL. The default `application.properties` is configured to connect to a MySQL database named `electroshop` on `localhost` using username `root` and password `codeforfazal`.
+Database: the backend now starts with an embedded H2 database by default so `spring-boot:run` works without extra setup. MySQL can still be used by swapping the datasource configuration.
 
 To create the database manually (if needed):
 

@@ -1,5 +1,10 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
+const axisStyle = {
+  fill: "rgb(var(--color-text-muted))",
+  fontSize: 12,
+};
+
 const DonutChart = ({ data, colors }) => (
   <ResponsiveContainer width="100%" height={260}>
     <PieChart>
@@ -17,7 +22,8 @@ const DonutChart = ({ data, colors }) => (
       <Tooltip
         contentStyle={{
           borderRadius: 12,
-          borderColor: "#E8ECF5",
+          borderColor: "rgb(var(--color-card-border))",
+          backgroundColor: "rgb(var(--color-surface))",
           boxShadow: "0 12px 24px rgba(15,23,42,0.08)",
         }}
       />

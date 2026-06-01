@@ -7,7 +7,10 @@ import com.electroshop.backend.entity.User;
 import com.electroshop.backend.service.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,9 +23,9 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         if (request.getConfirmPassword() == null || !request.getConfirmPassword().equals(request.getPassword())) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().body(Map.of("message", "Passwords do not match"));
         }
 
         User user = new User();
@@ -37,12 +40,21 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserDto> login(@RequestBody LoginRequest body) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest body) {
         String email = body.getEmail();
         String password = body.getPassword();
         User u = userService.login(email, password);
         u.setPassword(null);
         return ResponseEntity.ok(toDto(u));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        if (ex.getStatusCode() instanceof HttpStatus httpStatus) {
+            status = httpStatus;
+        }
+        return ResponseEntity.status(status).body(Map.of("message", ex.getReason()));
     }
 
     private UserDto toDto(User user) {
