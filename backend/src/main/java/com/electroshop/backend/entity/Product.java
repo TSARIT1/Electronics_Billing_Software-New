@@ -36,6 +36,10 @@ public class Product {
     @Column(name = "min_stock")
     private Integer minStock;
 
+    @jakarta.persistence.ManyToOne
+    @jakarta.persistence.JoinColumn(name = "shop_id")
+    private Shop shop;
+
     public Long getId() {
         return id;
     }
@@ -124,6 +128,14 @@ public class Product {
         this.minStock = minStock;
     }
 
+    public Shop getShop() {
+        return shop;
+    }
+
+    public void setShop(Shop shop) {
+        this.shop = shop;
+    }
+
     @Transient
     @JsonProperty("status")
     public String getStatus() {
@@ -137,3 +149,4 @@ public class Product {
         return "In Stock";
     }
 }
+

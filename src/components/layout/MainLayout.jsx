@@ -15,15 +15,9 @@ const MainLayout = () => {
   } = useStore();
 
   useEffect(() => {
-    // apply dark class at document root when darkMode changes
-    if (darkMode) {
-      document.documentElement.classList.add("dark");
-      document.documentElement.style.colorScheme = "dark";
-    } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.style.colorScheme = "light";
-    }
-  }, [darkMode]);
+    document.documentElement.classList.add("dark");
+    document.documentElement.style.colorScheme = "dark";
+  }, []);
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth;

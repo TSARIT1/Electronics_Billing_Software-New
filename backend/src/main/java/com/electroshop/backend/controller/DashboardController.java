@@ -10,6 +10,7 @@ import com.electroshop.backend.repository.InvoiceRepository;
 import com.electroshop.backend.repository.ProductRepository;
 import com.electroshop.backend.service.ReportsService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -36,12 +37,12 @@ public class DashboardController {
     }
 
     @GetMapping
-    public DashboardResponse get() {
+    public DashboardResponse get(@RequestHeader("X-Shop-Id") Long shopId) {
         DashboardResponse r = new DashboardResponse();
 
         // summary and monthly from ReportsService
-        ReportSummary summary = reportsService.summary();
-        MonthlySeries monthly = reportsService.monthly(12);
+        ReportSummary summary = reportsService.summary(shopId);
+        MonthlySeries monthly = reportsService.monthly(12, shopId);
         r.setSummary(summary);
         r.setMonthly(monthly);
 
@@ -55,7 +56,7 @@ public class DashboardController {
             rev.add(0.0);
         }
 
-        List<Invoice> invoices = invoiceRepository.findAll();
+        List<Invoice> invoices = invoiceRepository.findByShopId(shopId);
         for (Invoice inv : invoices) {
             if (inv.getCreatedAt() == null) continue;
             LocalDate dt = inv.getCreatedAt().toLocalDate();
@@ -69,7 +70,7 @@ public class DashboardController {
         r.setWeeklyRevenue(rev);
 
         // category breakdown
-        List<Product> products = productRepository.findAll();
+        List<Product> products = productRepository.findByShopId(shopId);
         double totalValue = products.stream().mapToDouble(p -> (p.getPrice() == null ? 0.0 : p.getPrice()) * (p.getQuantity() == null ? 0 : p.getQuantity())).sum();
         List<CategoryBreakdown> cb = new ArrayList<>();
         products.stream()

@@ -16,12 +16,16 @@ public class ProductService {
         this.repo = repo;
     }
 
-    public List<Product> listAll() {
-        return repo.findAll();
+    public List<Product> listAll(Long shopId) {
+        return repo.findByShopId(shopId);
     }
 
-    public Product get(Long id) {
-        return repo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+    public Product get(Long id, Long shopId) {
+        Product p = repo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        if (!p.getShop().getId().equals(shopId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this product");
+        }
+        return p;
     }
 
     public Product save(Product p) {
@@ -40,7 +44,8 @@ public class ProductService {
         return repo.save(p);
     }
 
-    public void delete(Long id) {
-        repo.deleteById(id);
+    public void delete(Long id, Long shopId) {
+        Product p = get(id, shopId);
+        repo.delete(p);
     }
 }

@@ -23,13 +23,13 @@ public class PurchaseController {
     }
 
     @PostMapping
-    public ResponseEntity<PurchaseOrder> create(@RequestBody PurchaseOrder order) {
-        return ResponseEntity.ok(purchaseService.create(order));
+    public ResponseEntity<PurchaseOrder> create(@RequestBody PurchaseOrder order, @RequestHeader("X-Shop-Id") Long shopId) {
+        return ResponseEntity.ok(purchaseService.create(order, shopId));
     }
 
     @GetMapping
-    public ResponseEntity<List<PurchaseOrder>> list(@RequestParam(value = "search", required = false) String search) {
-        List<PurchaseOrder> orders = purchaseRepository.findAll();
+    public ResponseEntity<List<PurchaseOrder>> list(@RequestParam(value = "search", required = false) String search, @RequestHeader("X-Shop-Id") Long shopId) {
+        List<PurchaseOrder> orders = purchaseRepository.findByShopId(shopId);
         if (search == null || search.isBlank()) {
             return ResponseEntity.ok(orders);
         }
@@ -45,19 +45,23 @@ public class PurchaseController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PurchaseOrder> get(@PathVariable Long id) {
-        return ResponseEntity.ok(purchaseRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Purchase order not found")));
+    public ResponseEntity<PurchaseOrder> get(@PathVariable Long id, @RequestHeader("X-Shop-Id") Long shopId) {
+        PurchaseOrder po = purchaseRepository.findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Purchase order not found"));
+        if (!po.getShop().getId().equals(shopId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this purchase order");
+        }
+        return ResponseEntity.ok(po);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PurchaseOrder> update(@PathVariable Long id, @RequestBody PurchaseOrder order) {
-        return ResponseEntity.ok(purchaseService.update(id, order));
+    public ResponseEntity<PurchaseOrder> update(@PathVariable Long id, @RequestBody PurchaseOrder order, @RequestHeader("X-Shop-Id") Long shopId) {
+        return ResponseEntity.ok(purchaseService.update(id, order, shopId));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
-        purchaseService.delete(id);
+    public ResponseEntity<?> delete(@PathVariable Long id, @RequestHeader("X-Shop-Id") Long shopId) {
+        purchaseService.delete(id, shopId);
         return ResponseEntity.noContent().build();
     }
 

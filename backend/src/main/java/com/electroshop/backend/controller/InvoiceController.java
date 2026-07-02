@@ -21,12 +21,15 @@ public class InvoiceController {
     }
 
     @PostMapping
-    public ResponseEntity<Invoice> create(@RequestBody Invoice invoice) {
-        return ResponseEntity.ok(invoiceService.create(invoice));
+    public ResponseEntity<Invoice> create(@RequestBody Invoice invoice, @RequestHeader("X-Shop-Id") Long shopId) {
+        com.electroshop.backend.entity.Shop shop = new com.electroshop.backend.entity.Shop();
+        shop.setId(shopId);
+        invoice.setShop(shop);
+        return ResponseEntity.ok(invoiceService.create(invoice, shopId));
     }
 
     @GetMapping
-    public ResponseEntity<List<Invoice>> list() {
-        return ResponseEntity.ok(invoiceRepository.findAll());
+    public ResponseEntity<List<Invoice>> list(@RequestHeader("X-Shop-Id") Long shopId) {
+        return ResponseEntity.ok(invoiceRepository.findByShopId(shopId));
     }
 }

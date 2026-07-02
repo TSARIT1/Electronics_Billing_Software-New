@@ -25,9 +25,9 @@ public class ReportsService {
         this.purchaseRepository = purchaseRepository;
     }
 
-    public ReportSummary summary() {
-        List<Invoice> invoices = invoiceRepository.findAll();
-        List<PurchaseOrder> purchases = purchaseRepository.findAll();
+    public ReportSummary summary(Long shopId) {
+        List<Invoice> invoices = invoiceRepository.findByShopId(shopId);
+        List<PurchaseOrder> purchases = purchaseRepository.findByShopId(shopId);
 
         double totalRevenue = invoices.stream().mapToDouble(i -> i.getTotal() == null ? 0.0 : i.getTotal()).sum();
         double totalPurchases = purchases.stream().mapToDouble(p -> p.getTotal() == null ? 0.0 : p.getTotal()).sum();
@@ -44,7 +44,7 @@ public class ReportsService {
         return s;
     }
 
-    public MonthlySeries monthly(int months) {
+    public MonthlySeries monthly(int months, Long shopId) {
         if (months <= 0) months = 6;
         LocalDate now = LocalDate.now(ZoneId.systemDefault());
         List<String> labels = new ArrayList<>();
@@ -59,7 +59,7 @@ public class ReportsService {
             pur.add(0.0);
         }
 
-        List<Invoice> invoices = invoiceRepository.findAll();
+        List<Invoice> invoices = invoiceRepository.findByShopId(shopId);
         for (Invoice inv : invoices) {
             if (inv.getCreatedAt() == null) continue;
             LocalDate dt = inv.getCreatedAt().toLocalDate();
@@ -70,7 +70,7 @@ public class ReportsService {
             }
         }
 
-        List<PurchaseOrder> purchases = purchaseRepository.findAll();
+        List<PurchaseOrder> purchases = purchaseRepository.findByShopId(shopId);
         for (PurchaseOrder po : purchases) {
             if (po.getCreatedAt() == null) continue;
             LocalDate dt = po.getCreatedAt().toLocalDate();

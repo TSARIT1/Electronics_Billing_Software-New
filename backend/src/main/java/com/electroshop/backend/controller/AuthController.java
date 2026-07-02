@@ -33,8 +33,9 @@ public class AuthController {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(request.getPassword());
+        user.setRole(request.getRole());
 
-        User u = userService.register(user);
+        User u = userService.register(user, request.getShopName());
         u.setPassword(null);
         return ResponseEntity.status(HttpStatus.CREATED).body(toDto(u));
     }
@@ -48,14 +49,7 @@ public class AuthController {
         return ResponseEntity.ok(toDto(u));
     }
 
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, String>> handleResponseStatusException(ResponseStatusException ex) {
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        if (ex.getStatusCode() instanceof HttpStatus httpStatus) {
-            status = httpStatus;
-        }
-        return ResponseEntity.status(status).body(Map.of("message", ex.getReason()));
-    }
+
 
     private UserDto toDto(User user) {
         UserDto dto = new UserDto();
@@ -64,6 +58,16 @@ public class AuthController {
         dto.setEmail(user.getEmail());
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
+        if (user.getShop() != null) {
+            dto.setShopId(user.getShop().getId());
+            dto.setShopName(user.getShop().getName());
+            if (user.getShop().getPlan() != null) {
+                dto.setPlanName(user.getShop().getPlan().getName());
+            } else {
+                dto.setPlanName("No Plan");
+            }
+            dto.setSubscriptionExpiresAt(user.getShop().getSubscriptionExpiresAt());
+        }
         return dto;
     }
 }

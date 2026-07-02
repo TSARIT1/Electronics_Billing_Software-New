@@ -3,6 +3,8 @@ package com.electroshop.backend.service;
 import com.electroshop.backend.entity.Invoice;
 import com.electroshop.backend.entity.InvoiceItem;
 import com.electroshop.backend.entity.Product;
+import com.electroshop.backend.entity.Shop;
+import org.springframework.web.server.ResponseStatusException;
 import com.electroshop.backend.repository.InvoiceRepository;
 import com.electroshop.backend.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,9 @@ class InvoiceServiceTest {
         product.setName("Laptop");
         product.setPrice(50000.0);
         product.setQuantity(2);
+        Shop shop = new Shop();
+        shop.setId(1L);
+        product.setShop(shop);
 
         InvoiceItem item = new InvoiceItem();
         item.setProductId(1L);
@@ -52,7 +57,7 @@ class InvoiceServiceTest {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(invoiceRepository.save(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Invoice savedInvoice = invoiceService.create(invoice);
+        Invoice savedInvoice = invoiceService.create(invoice, 1L);
 
         assertEquals(0, product.getQuantity());
         assertEquals("Out of Stock", product.getStatus());
@@ -68,6 +73,9 @@ class InvoiceServiceTest {
         product.setName("Phone");
         product.setPrice(20000.0);
         product.setQuantity(1);
+        Shop shop = new Shop();
+        shop.setId(1L);
+        product.setShop(shop);
 
         InvoiceItem item = new InvoiceItem();
         item.setProductId(1L);
@@ -78,9 +86,9 @@ class InvoiceServiceTest {
 
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> invoiceService.create(invoice));
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () -> invoiceService.create(invoice, 1L));
 
-        assertEquals("Insufficient stock for product: Phone", exception.getMessage());
+        assertEquals("Insufficient stock for product: Phone", exception.getReason());
         verify(productRepository, never()).save(any(Product.class));
         verify(invoiceRepository, never()).save(any(Invoice.class));
     }

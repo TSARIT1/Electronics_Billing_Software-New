@@ -7,7 +7,8 @@ import Button from "../../components/ui/Button";
 import SearchInput from "../../components/ui/SearchInput";
 import InventoryTable from "../../components/tables/InventoryTable";
 import AddProductModal from "../../components/modals/AddProductModal";
-import { createProduct, listProducts } from "../../services/products";
+import { createProduct, listProducts, updateProduct, deleteProduct } from "../../services/products";
+import { createNotification } from "../../services/notifications";
 
 const tabs = ["All", "Low Stock", "Out of Stock"];
 
@@ -17,6 +18,7 @@ const Inventory = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   const formatCurrency = (value) =>
     `₹${Number(value || 0).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
@@ -74,7 +76,7 @@ const Inventory = () => {
 
   const handleSave = async (values) => {
     try {
-      await createProduct({
+      const payload = {
         name: values.name,
         brand: values.brand,
         category: values.category,
@@ -85,12 +87,59 @@ const Inventory = () => {
         price: Number(values.price) || 0,
         quantity: Number(values.stock) || 0,
         minStock: Number(values.minStock) || 5,
-      });
-      toast.success("Product saved successfully");
+      };
+
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, payload);
+        toast.success("Product updated successfully");
+        createNotification({
+          title: "Product Updated",
+          message: `${values.name} details were updated in inventory.`,
+          type: "info"
+        }).catch(console.error);
+      } else {
+        await createProduct(payload);
+        toast.success("Product saved successfully");
+        createNotification({
+          title: "New Product Added",
+          message: `${values.name} was successfully added to inventory.`,
+          type: "success"
+        }).catch(console.error);
+      }
+
+      if (payload.quantity <= payload.minStock) {
+        createNotification({
+          title: "Low Stock Alert",
+          message: `${values.name} is running low on stock (${payload.quantity} remaining).`,
+          type: "warning"
+        }).catch(console.error);
+      }
+
       await loadProducts(search);
     } catch (error) {
       toast.error(error.message);
     }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      const product = products.find(p => p.id === id);
+      await deleteProduct(id);
+      toast.success("Product deleted successfully");
+      createNotification({
+        title: "Product Deleted",
+        message: `${product ? product.name : 'A product'} was removed from inventory.`,
+        type: "danger"
+      }).catch(console.error);
+      await loadProducts(search);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleEdit = (product) => {
+    setEditingProduct(product);
+    setIsModalOpen(true);
   };
 
   return (
@@ -108,10 +157,10 @@ const Inventory = () => {
               <button
                 key={tab}
                 type="button"
-                className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                className={`rounded-full px-5 py-2 text-xs font-bold transition duration-300 ${
                   activeTab === tab
-                    ? "bg-primary text-white shadow-soft"
-                    : "bg-slate-100 text-text-muted"
+                    ? "bg-amber-500/20 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/30"
+                    : "bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-800"
                 }`}
                 onClick={() => setActiveTab(tab)}
               >
@@ -125,7 +174,7 @@ const Inventory = () => {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Search product or SKU"
             />
-            <Button onClick={() => setIsModalOpen(true)}>
+            <Button onClick={() => { setEditingProduct(null); setIsModalOpen(true); }}>
               <PackagePlus size={16} />
               Add Product
             </Button>
@@ -134,14 +183,15 @@ const Inventory = () => {
 
         <div className="mt-5">
           {isLoading && <p className="text-sm text-text-muted">Loading inventory...</p>}
-          <InventoryTable data={filtered} />
+          <InventoryTable data={filtered} onEdit={handleEdit} onDelete={handleDelete} />
         </div>
       </Card>
 
       <AddProductModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); setEditingProduct(null); }}
         onSave={handleSave}
+        product={editingProduct}
       />
     </div>
   );

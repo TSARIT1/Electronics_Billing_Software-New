@@ -37,6 +37,10 @@ public class User {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    @jakarta.persistence.ManyToOne
+    @jakarta.persistence.JoinColumn(name = "shop_id")
+    private Shop shop;
+
     public Long getId() {
         return id;
     }
@@ -99,6 +103,14 @@ public class User {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Shop getShop() {
+        return shop;
+    }
+
+    public void setShop(Shop shop) {
+        this.shop = shop;
     }
 
     @PrePersist

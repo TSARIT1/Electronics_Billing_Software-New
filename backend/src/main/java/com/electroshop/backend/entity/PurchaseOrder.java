@@ -31,6 +31,10 @@ public class PurchaseOrder {
     @JoinColumn(name = "purchase_id")
     private List<PurchaseItem> items;
 
+    @jakarta.persistence.ManyToOne
+    @jakarta.persistence.JoinColumn(name = "shop_id")
+    private Shop shop;
+
     public Long getId() {
         return id;
     }
@@ -78,4 +82,13 @@ public class PurchaseOrder {
     public void setItems(List<PurchaseItem> items) {
         this.items = items;
     }
+
+    public Shop getShop() {
+        return shop;
+    }
+
+    public void setShop(Shop shop) {
+        this.shop = shop;
+    }
 }
+

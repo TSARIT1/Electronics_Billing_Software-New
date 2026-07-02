@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BadgeDollarSign, CalendarRange, Wallet } from "lucide-react";
+import { AlertTriangle, BadgeDollarSign, CalendarRange, ShoppingBag, ShoppingCart, Wallet, Boxes } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import StatCard from "../../components/cards/StatCard";
 import Card from "../../components/ui/Card";
@@ -8,13 +9,14 @@ import DonutChart from "../../components/charts/DonutChart";
 import { listInvoices } from "../../services/invoices";
 import { listProducts } from "../../services/products";
 
-const donutColors = ["#4F46E5", "#22C55E", "#F59E0B", "#EF4444"];
+const donutColors = ["#f59e0b", "#ef4444", "#3b82f6", "#10b981"];
 
 const Dashboard = () => {
   const [invoices, setInvoices] = useState([]);
   const [products, setProducts] = useState([]);
   const [period, setPeriod] = useState("weekly");
   const statIcons = [Wallet, CalendarRange, BadgeDollarSign, AlertTriangle];
+  const navigate = useNavigate();
 
   useEffect(() => {
     const load = async () => {
@@ -134,6 +136,42 @@ const Dashboard = () => {
         ))}
       </div>
 
+      <Card className="overflow-hidden border border-amber-500/10 shadow-[0_0_40px_rgba(245,158,11,0.05)]">
+        <div className="flex flex-col gap-4 rounded-[28px] bg-gradient-to-r from-[#f59e0b] via-[#f59e0b] to-[#ef4444] px-5 py-5 text-slate-950 shadow-[0_0_30px_rgba(245,158,11,0.3)] sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] font-bold text-slate-900/80">Quick Actions</p>
+            <h3 className="mt-2 text-xl font-bold">Start your most used workflows faster</h3>
+            <p className="mt-1 max-w-xl text-sm font-semibold text-slate-900/80">Access billing, inventory management, and purchase orders right from the dashboard.</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => navigate("/billing")}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950/20 px-4 py-3 text-sm font-bold text-slate-950 ring-1 ring-slate-950/30 transition duration-300 hover:bg-slate-950/30 hover:-translate-y-0.5"
+            >
+              <ShoppingCart size={18} />
+              Create Invoice
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/inventory")}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950/20 px-4 py-3 text-sm font-bold text-slate-950 ring-1 ring-slate-950/30 transition duration-300 hover:bg-slate-950/30 hover:-translate-y-0.5"
+            >
+              <Boxes size={18} />
+              Inventory
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/purchase")}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950/20 px-4 py-3 text-sm font-bold text-slate-950 ring-1 ring-slate-950/30 transition duration-300 hover:bg-slate-950/30 hover:-translate-y-0.5"
+            >
+              <ShoppingBag size={18} />
+              New Purchase
+            </button>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <div className="flex flex-col gap-3 border-b border-card-border px-5 py-4 md:flex-row md:items-center md:justify-between">
@@ -148,17 +186,17 @@ const Dashboard = () => {
                 <div className="text-lg font-semibold text-text-main">{formatCurrency(periodTotals.total)}</div>
               </div>
 
-              <div className="flex items-center gap-2 rounded-full bg-slate-100 p-1 text-xs font-semibold">
-                <button type="button" onClick={() => setPeriod('weekly')} className={"rounded-full px-3 py-1 shadow-soft " + (period === 'weekly' ? 'bg-white text-primary' : 'text-text-muted')}>Weekly</button>
-                <button type="button" onClick={() => setPeriod('monthly')} className={"rounded-full px-3 py-1 " + (period === 'monthly' ? 'bg-white text-primary' : 'text-text-muted')}>Monthly</button>
+              <div className="flex items-center gap-2 rounded-full bg-slate-900 p-1 text-xs font-semibold border border-amber-500/10 shadow-inner shadow-amber-500/5">
+                <button type="button" onClick={() => setPeriod('weekly')} className={"rounded-full px-4 py-1.5 transition " + (period === 'weekly' ? 'bg-amber-500/20 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'text-slate-400 hover:text-slate-200')}>Weekly</button>
+                <button type="button" onClick={() => setPeriod('monthly')} className={"rounded-full px-4 py-1.5 transition " + (period === 'monthly' ? 'bg-amber-500/20 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'text-slate-400 hover:text-slate-200')}>Monthly</button>
               </div>
 
-              <div className="ml-4 text-sm text-text-muted">{periodTotals.prev > 0 ? 'Change vs previous' : 'No previous data'}</div>
+              <div className="ml-4 text-sm text-slate-500">{periodTotals.prev > 0 ? 'Change vs previous' : 'No previous data'}</div>
             </div>
           </div>
 
           <div className="p-5">
-            <SalesBarChart data={salesOverview} color="#4F46E5" />
+            <SalesBarChart data={salesOverview} color="#f59e0b" />
           </div>
         </Card>
 

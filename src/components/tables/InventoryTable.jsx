@@ -8,7 +8,7 @@ const getStatusVariant = (status) => {
   return "neutral";
 };
 
-const InventoryTable = ({ data, onDelete }) => (
+const InventoryTable = ({ data, onEdit, onDelete }) => (
   <div className="overflow-x-auto">
     <table className="w-full min-w-[900px] text-sm">
       <thead className="text-left text-xs font-semibold text-text-muted">
@@ -41,6 +41,7 @@ const InventoryTable = ({ data, onDelete }) => (
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  onClick={() => onEdit && onEdit(row)}
                   className="flex h-9 w-9 items-center justify-center rounded-xl border border-card-border bg-gradient-to-br from-surface to-surface-alt text-text-muted shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:text-primary hover:shadow-card dark:bg-surface-alt"
                 >
                   <Pencil size={14} />

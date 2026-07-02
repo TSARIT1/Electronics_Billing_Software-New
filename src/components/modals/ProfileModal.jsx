@@ -72,6 +72,16 @@ const ProfileModal = ({ isOpen, onClose, profile, onSave }) => {
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">
+                  Shop Name
+                </label>
+                <input
+                  className={`${inputStyles} opacity-70`}
+                  {...register("shopName")}
+                  readOnly
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-text-muted">
                   Email
                 </label>
                 <input

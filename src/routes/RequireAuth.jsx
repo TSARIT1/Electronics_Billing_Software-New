@@ -7,6 +7,11 @@ const RequireAuth = ({ children }) => {
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
+
+  if (user.role === "SUPER_ADMIN") {
+    return <Navigate to="/super-admin" replace />;
+  }
+
   return children;
 };
 

@@ -4,28 +4,20 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-  --color-app-bg: 241 245 253;
-  --color-surface: 255 255 255;
-  --color-surface-alt: 248 251 255;
-  --color-text-main: 15 23 42;
-  --color-text-muted: 71 85 105;
-  --color-card-border: 214 225 239;
-  --color-sidebar-start: 29 23 69;
-  --color-sidebar-end: 79 70 229;
+html {
+  scroll-behavior: smooth;
 }
 
-html.dark {
+:root {
   color-scheme: dark;
-  --color-app-bg: 7 16 39;
-  --color-surface: 15 23 42;
-  --color-surface-alt: 9 16 34;
-  --color-text-main: 226 232 240;
-  --color-text-muted: 148 163 184;
-  --color-card-border: 51 65 85;
-  --color-sidebar-start: 9 16 30;
-  --color-sidebar-end: 67 56 202;
+  --color-app-bg: 2 7 23;      /* #020717 - Almost black/deep blue */
+  --color-surface: 2 6 23;     /* slate-950 */
+  --color-surface-alt: 15 23 42; /* slate-900 */
+  --color-text-main: 241 245 249; /* slate-100 */
+  --color-text-muted: 148 163 184; /* slate-400 */
+  --color-card-border: 245 158 11; /* Amber 500 base, used with opacity */
+  --color-sidebar-start: 2 6 23;
+  --color-sidebar-end: 2 6 23;
 }
 
 * {
@@ -37,19 +29,13 @@ body {
   font-family: "Poppins", ui-sans-serif, system-ui, -apple-system;
   background: rgb(var(--color-app-bg));
   background-image:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.08), transparent 24%),
-    radial-gradient(circle at top right, rgba(14, 165, 233, 0.06), transparent 20%);
+    radial-gradient(circle at top right, rgba(245, 158, 11, 0.15), transparent 26%),
+    radial-gradient(circle at bottom left, rgba(14, 165, 233, 0.12), transparent 28%);
   background-attachment: fixed;
   color: rgb(var(--color-text-main));
   transition: background-color 180ms ease, color 180ms ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-html.dark body {
-  background-image:
-    radial-gradient(circle at top left, rgba(79, 70, 229, 0.14), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.08), transparent 22%);
 }
 
 #root {
@@ -78,3 +64,39 @@ html.dark body {
   backdrop-filter: blur(10px);
   background: rgba(15, 23, 42, 0.45);
 }
+
+@media print {
+  /* Hide everything in the page */
+  body * {
+    visibility: hidden;
+  }
+  /* Except our print container and its contents */
+  #invoice-print-area,
+  #invoice-print-area * {
+    visibility: visible;
+  }
+  #invoice-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #f4f6f4 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  /* Hide interactive buttons or components */
+  .no-print {
+    display: none !important;
+  }
+  /* Adjust paper margins */
+  @page {
+    size: A4 portrait;
+    margin: 5mm;
+  }
+}
+

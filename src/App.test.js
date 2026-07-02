@@ -8,6 +8,6 @@ test("renders dashboard title", () => {
       <App />
     </BrowserRouter>
   );
-  const heading = screen.getByText(/dashboard/i);
-  expect(heading).toBeInTheDocument();
+  const headings = screen.getAllByText(/dashboard/i);
+  expect(headings.length).toBeGreaterThan(0);
 });

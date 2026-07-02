@@ -23,7 +23,7 @@ public class PurchaseService {
     }
 
     @Transactional
-    public PurchaseOrder create(PurchaseOrder order) {
+    public PurchaseOrder create(PurchaseOrder order, Long shopId) {
         if (order.getStatus() == null || order.getStatus().isBlank()) {
             order.setStatus("Pending");
         }
@@ -32,6 +32,11 @@ public class PurchaseService {
         if (items == null || items.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purchase order must contain at least one item");
         }
+        
+        com.electroshop.backend.entity.Shop shop = new com.electroshop.backend.entity.Shop();
+        shop.setId(shopId);
+        order.setShop(shop);
+
         for (PurchaseItem it : items) {
             if (it.getQuantity() == null || it.getQuantity() <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Purchase item quantity must be greater than zero");
@@ -41,30 +46,50 @@ public class PurchaseService {
             }
             it.setSubtotal(it.getCost() * it.getQuantity());
             total += it.getSubtotal();
-            Product p = productRepository.findById(it.getProductId()).orElse(null);
+            
+            Product p = null;
+            if (it.getProductId() != null) {
+                p = productRepository.findById(it.getProductId()).orElse(null);
+            }
+
             if (p == null) {
                 p = new Product();
                 p.setName(it.getName());
                 p.setCostPrice(it.getCost());
                 p.setPrice(it.getCost());
                 p.setQuantity(it.getQuantity());
+                p.setShop(shop);
+                System.out.println("DEBUG: Saving NEW Product Name: " + p.getName());
+                p = productRepository.save(p);
             } else {
+                if (!p.getShop().getId().equals(shopId)) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to product ID: " + it.getProductId());
+                }
                 if (p.getQuantity() == null) {
                     p.setQuantity(0);
                 }
                 p.setQuantity(p.getQuantity() + it.getQuantity());
+                System.out.println("DEBUG: Updating EXISTING Product ID: " + p.getId() + ", SKU: " + p.getSku() + ", Name: " + p.getName());
+                // Dirty checking will flush the update automatically! No need to call save(p)
             }
-            Product savedProduct = productRepository.save(p);
-            it.setProductId(savedProduct.getId());
+            it.setProductId(p.getId());
         }
         order.setTotal(total);
         return purchaseRepository.save(order);
     }
 
+    public List<PurchaseOrder> listAll(Long shopId) {
+        return purchaseRepository.findByShopId(shopId);
+    }
+
     @Transactional
-    public PurchaseOrder update(Long id, PurchaseOrder incoming) {
+    public PurchaseOrder update(Long id, PurchaseOrder incoming, Long shopId) {
         PurchaseOrder existing = purchaseRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Purchase order not found"));
+
+        if (!existing.getShop().getId().equals(shopId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this purchase order");
+        }
 
         if (incoming.getSupplier() != null && !incoming.getSupplier().isBlank()) {
             existing.setSupplier(incoming.getSupplier());
@@ -77,9 +102,13 @@ public class PurchaseService {
     }
 
     @Transactional
-    public void delete(Long id) {
+    public void delete(Long id, Long shopId) {
         PurchaseOrder existing = purchaseRepository.findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Purchase order not found"));
+
+        if (!existing.getShop().getId().equals(shopId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to this purchase order");
+        }
 
         List<PurchaseItem> items = existing.getItems();
         for (PurchaseItem it : items) {

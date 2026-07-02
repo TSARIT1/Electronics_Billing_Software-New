@@ -1,0 +1,6 @@
+com\electroshop\backend\DatabaseCountTest.class
+com\electroshop\backend\DbQueryTest.class
+com\electroshop\backend\service\PaymentServiceTest.class
+com\electroshop\backend\PurchaseServiceTest.class
+com\electroshop\backend\service\InvoiceServiceTest.class
+com\electroshop\backend\DbSchemaTest.class

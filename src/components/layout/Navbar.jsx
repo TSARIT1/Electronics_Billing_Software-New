@@ -1,11 +1,10 @@
 import {
+  ArrowRight,
   Bell,
   ChevronDown,
   ChevronRight,
   Menu,
-  Moon,
   Search,
-  Sun,
   CheckCheck,
   Trash2,
 } from "lucide-react";
@@ -17,7 +16,7 @@ import ProfileModal from "../modals/ProfileModal";
 import Badge from "../ui/Badge";
 
 const pageMeta = {
-  "/": { title: "Dashboard", subtitle: "Overview & Statistics" },
+  "/dashboard": { title: "Dashboard", subtitle: "Overview & Statistics" },
   "/billing": { title: "Billing (POS)", subtitle: "Fast billing workspace" },
   "/inventory": { title: "Inventory", subtitle: "Manage stock items" },
   "/purchase": { title: "Purchase", subtitle: "Supplier orders" },
@@ -33,11 +32,10 @@ const Navbar = () => {
     sidebarCollapsed,
     toggleCollapse,
     toggleSidebar,
-    darkMode,
-    toggleDarkMode,
     profile,
     updateProfile,
     notifications,
+    fetchNotifications,
     markNotificationRead,
     markAllNotificationsRead,
     clearNotifications,
@@ -45,14 +43,18 @@ const Navbar = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationRef = useRef(null);
-  const meta = pageMeta[location.pathname] || pageMeta["/"];
-  const initials = profile.name
+  const meta = pageMeta[location.pathname] || pageMeta["/dashboard"];
+  const initials = (profile.name || "")
     .split(" ")
     .map((part) => part[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
   const unreadCount = notifications.filter((notification) => !notification.read).length;
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -66,64 +68,72 @@ const Navbar = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 bg-app-bg/90 px-6 py-4 backdrop-blur lg:px-8 dark:bg-surface/80">
-      <div className="flex flex-col gap-4 rounded-[28px] border border-card-border bg-surface/75 px-4 py-4 shadow-soft lg:flex-row lg:items-center lg:justify-between dark:bg-surface/55 dark:border-slate-700">
+    <header className="sticky top-0 z-20 px-6 py-4 lg:px-8">
+      <div className="flex flex-col gap-4 rounded-[28px] border border-amber-500/20 bg-slate-950/80 px-4 py-4 shadow-[0_0_40px_rgba(245,158,11,0.05)] backdrop-blur-xl lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-card-border bg-gradient-to-br from-surface to-surface-alt text-text-main shadow-soft transition hover:-translate-y-0.5 hover:shadow-card lg:hidden dark:bg-surface-alt dark:border-slate-700 dark:text-slate-100"
+            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-500/10 bg-slate-900/50 text-slate-100 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] lg:hidden"
             onClick={toggleSidebar}
           >
             <Menu size={19} strokeWidth={2.4} />
           </button>
           <button
             type="button"
-            className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-card-border bg-gradient-to-br from-surface to-surface-alt text-text-main shadow-soft transition hover:-translate-y-0.5 hover:shadow-card lg:flex dark:bg-surface-alt dark:border-slate-700 dark:text-slate-100"
+            className="hidden h-11 w-11 items-center justify-center rounded-2xl border border-amber-500/10 bg-slate-900/50 text-slate-100 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] lg:flex"
             onClick={toggleCollapse}
           >
-            <Menu size={19} strokeWidth={2.4} className={sidebarCollapsed ? "rotate-180" : ""} />
+            <Menu size={19} strokeWidth={2.4} className={sidebarCollapsed ? "rotate-180 transition-transform duration-300" : "transition-transform duration-300"} />
           </button>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-text-main">{meta.title}</h2>
-            <p className="text-sm font-medium text-text-muted">{meta.subtitle}</p>
+            <h2 className="text-xl font-semibold tracking-tight text-white">{meta.title}</h2>
+            <p className="text-xs tracking-wider text-slate-400">{meta.subtitle}</p>
           </div>
         </div>
 
         <div className="flex flex-1 items-center gap-3 lg:justify-end">
-          <div className="hidden flex-1 items-center gap-2 rounded-2xl border border-card-border bg-gradient-to-r from-surface via-surface to-surface-alt px-4 py-2.5 text-sm font-medium text-text-muted shadow-soft md:flex md:max-w-sm dark:bg-surface-alt dark:text-slate-300">
-            <Search size={17} strokeWidth={2.3} className="text-primary" />
+          <div className="hidden flex-1 items-center gap-2 rounded-2xl border border-amber-500/10 bg-slate-900/50 px-4 py-2.5 text-sm font-medium text-slate-300 shadow-inner shadow-amber-500/5 transition focus-within:border-amber-500/30 focus-within:ring-1 focus-within:ring-amber-500/30 md:flex md:max-w-sm">
+            <Search size={17} strokeWidth={2.3} className="text-amber-500" />
             <input
               placeholder="Search here"
-              className="w-full bg-transparent text-text-main outline-none placeholder:text-text-muted"
+              className="w-full bg-transparent text-white outline-none placeholder:text-slate-500"
             />
           </div>
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="hidden items-center gap-2 rounded-2xl border border-amber-500/20 bg-slate-900/80 px-4 py-2 text-sm font-semibold text-white shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] md:flex"
+          >
+            <ArrowRight size={16} strokeWidth={2.2} className="text-amber-400" />
+            Landing
+          </button>
           <div className="relative" ref={notificationRef}>
             <button
               type="button"
-              className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-card-border bg-gradient-to-br from-surface to-surface-alt text-text-main shadow-soft transition hover:-translate-y-0.5 hover:shadow-card dark:bg-surface-alt dark:text-slate-100"
+              className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-500/10 bg-slate-900/50 text-slate-100 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]"
               onClick={() => setNotificationsOpen((open) => !open)}
               aria-label="Open notifications"
               title="Notifications"
             >
               <Bell size={19} strokeWidth={2.3} />
               {unreadCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-semibold text-white">
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold text-slate-950 shadow-[0_0_10px_rgba(245,158,11,0.5)]">
                   {unreadCount}
                 </span>
               ) : null}
             </button>
 
             {notificationsOpen ? (
-              <div className="absolute right-0 top-12 z-50 w-80 overflow-hidden rounded-3xl border border-card-border bg-surface shadow-2xl dark:bg-surface-alt">
-                <div className="flex items-center justify-between border-b border-card-border px-4 py-3 dark:border-slate-700">
+              <div className="absolute right-0 top-14 z-50 w-80 overflow-hidden rounded-[24px] border border-amber-500/20 bg-slate-950/95 shadow-[0_15px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+                <div className="flex items-center justify-between border-b border-amber-500/10 px-4 py-3 bg-slate-900/50">
                   <div>
-                    <p className="text-sm font-semibold text-text-main dark:text-slate-100">Notifications</p>
-                    <p className="text-xs text-text-muted dark:text-slate-400">Recent system updates</p>
+                    <p className="text-sm font-semibold text-white">Notifications</p>
+                    <p className="text-[10px] uppercase tracking-wider text-amber-500/70">Recent updates</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      className="rounded-xl border border-card-border/70 bg-surface p-2 text-text-muted shadow-sm transition hover:-translate-y-0.5 hover:bg-surface-alt hover:text-text-main hover:shadow-card dark:border-slate-700 dark:bg-surface-alt dark:hover:bg-surface"
+                      className="rounded-xl border border-amber-500/10 bg-slate-900/50 p-2 text-slate-400 transition hover:-translate-y-0.5 hover:border-amber-500/30 hover:text-white"
                       onClick={() => {
                         markAllNotificationsRead();
                       }}
@@ -133,7 +143,7 @@ const Navbar = () => {
                     </button>
                     <button
                       type="button"
-                      className="rounded-xl border border-card-border/70 bg-surface p-2 text-text-muted shadow-sm transition hover:-translate-y-0.5 hover:bg-surface-alt hover:text-danger hover:shadow-card dark:border-slate-700 dark:bg-surface-alt dark:hover:bg-surface"
+                      className="rounded-xl border border-red-500/10 bg-slate-900/50 p-2 text-slate-400 transition hover:-translate-y-0.5 hover:border-red-500/30 hover:text-red-400"
                       onClick={() => clearNotifications()}
                       title="Clear notifications"
                     >
@@ -141,7 +151,7 @@ const Navbar = () => {
                     </button>
                     <button
                       type="button"
-                      className="rounded-xl border border-card-border/70 bg-surface p-2 text-text-muted shadow-sm transition hover:-translate-y-0.5 hover:bg-surface-alt hover:text-primary hover:shadow-card dark:border-slate-700 dark:bg-surface-alt dark:hover:bg-slate-800"
+                      className="rounded-xl border border-amber-500/10 bg-slate-900/50 p-2 text-slate-400 transition hover:-translate-y-0.5 hover:border-amber-500/30 hover:text-amber-400"
                       onClick={() => {
                         setNotificationsOpen(false);
                         navigate("/notifications");
@@ -152,49 +162,49 @@ const Navbar = () => {
                     </button>
                   </div>
                 </div>
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-80 overflow-y-auto custom-scrollbar">
                   {notifications.length > 0 ? (
                     notifications.map((notification) => (
                       <button
                         key={notification.id}
                         type="button"
-                        className={`flex w-full items-start gap-3 border-b border-card-border px-4 py-3 text-left transition last:border-b-0 hover:bg-surface-alt dark:border-slate-800 dark:hover:bg-slate-800/70 ${notification.read ? "opacity-70" : ""}`}
+                        className={`flex w-full items-start gap-3 border-b border-amber-500/5 px-4 py-3 text-left transition duration-300 last:border-b-0 hover:bg-slate-800/80 ${notification.read ? "opacity-60" : ""}`}
                         onClick={() => {
                           markNotificationRead(notification.id);
                         }}
                       >
                         <Badge
                           variant={notification.type === "success" ? "success" : notification.type === "warning" ? "warning" : "info"}
-                          className="mt-0.5"
+                          className="mt-0.5 bg-opacity-20"
                         >
                           {notification.type || "info"}
                         </Badge>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-text-main dark:text-slate-100">
+                          <p className="text-sm font-semibold text-white">
                             {notification.title}
                           </p>
-                          <p className="mt-1 text-xs text-text-muted dark:text-slate-400">
+                          <p className="mt-1 text-xs text-slate-400">
                             {notification.message}
                           </p>
-                          <p className="mt-2 text-[11px] text-text-muted dark:text-slate-500">
-                            {new Date(notification.time).toLocaleString()}
+                          <p className="mt-2 text-[10px] text-slate-500 uppercase tracking-wider">
+                            {new Date(notification.createdAt || notification.time || Date.now()).toLocaleString()}
                           </p>
                         </div>
                         {!notification.read ? (
-                          <span className="mt-1 h-2.5 w-2.5 rounded-full bg-primary" />
+                          <span className="mt-1 h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
                         ) : null}
                       </button>
                     ))
                   ) : (
-                    <div className="px-4 py-8 text-center text-sm text-text-muted dark:text-slate-400">
+                    <div className="px-4 py-8 text-center text-xs tracking-wider uppercase text-slate-500">
                       No notifications yet.
                     </div>
                   )}
                 </div>
-                <div className="border-t border-card-border px-4 py-3 dark:border-slate-700">
+                <div className="border-t border-amber-500/10 px-4 py-3 bg-slate-900/30">
                   <button
                     type="button"
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-glow transition hover:bg-primary-dark"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_20px_rgba(245,158,11,0.3)] transition hover:brightness-110"
                     onClick={() => {
                       setNotificationsOpen(false);
                       navigate("/notifications");
@@ -209,39 +219,27 @@ const Navbar = () => {
           </div>
           <button
             type="button"
-            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-card-border bg-gradient-to-br from-surface to-surface-alt text-text-main shadow-soft transition hover:-translate-y-0.5 hover:shadow-card dark:bg-surface-alt dark:text-slate-100"
-            onClick={toggleDarkMode}
-            aria-pressed={darkMode}
-            aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-            title={darkMode ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {darkMode ? (
-              <Sun size={19} strokeWidth={2.3} className="text-yellow-400" />
-            ) : (
-              <Moon size={19} strokeWidth={2.3} className="text-text-main dark:text-slate-100" />
-            )}
-          </button>
-          <button
-            type="button"
-            className="flex items-center gap-3 rounded-2xl border border-card-border bg-gradient-to-r from-surface via-surface to-surface-alt px-3 py-2 shadow-soft transition hover:-translate-y-0.5 hover:shadow-card dark:bg-surface-alt dark:border-slate-700"
+            className="flex items-center gap-3 rounded-2xl border border-amber-500/10 bg-slate-900/50 px-3 py-2 shadow-soft transition duration-300 hover:-translate-y-0.5 hover:border-amber-500/30 hover:bg-slate-800/80 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]"
             onClick={() => setProfileOpen(true)}
           >
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
                 alt={profile.name}
-                className="h-8 w-8 rounded-full object-cover"
+                className="h-8 w-8 rounded-full object-cover border border-amber-500/30"
               />
             ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-100 to-white text-xs font-semibold text-text-main ring-1 ring-indigo-200 dark:bg-slate-700 dark:text-slate-100">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-xs font-bold text-amber-400 ring-1 ring-amber-500/30 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
                 {initials}
               </div>
             )}
-            <div className="hidden text-sm md:block">
-              <p className="font-bold text-text-main">{profile.name}</p>
-              <p className="text-xs font-medium text-text-muted">{profile.role}</p>
+            <div className="hidden text-sm md:block text-left">
+              <p className="font-semibold text-white line-clamp-1">{profile.name}</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-amber-400">
+                {profile.shopName || "General Store"}
+              </p>
             </div>
-            <ChevronDown size={16} strokeWidth={2.4} className="text-text-muted" />
+            <ChevronDown size={16} strokeWidth={2.4} className="text-slate-400 ml-1" />
           </button>
         </div>
       </div>

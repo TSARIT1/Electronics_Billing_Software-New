@@ -6,12 +6,13 @@ import Button from "../ui/Button";
 const inputStyles =
   "w-full rounded-xl border border-card-border bg-surface px-3 py-2 text-sm text-text-main outline-none focus:border-primary dark:bg-surface-alt";
 
-const BillingFormModal = ({ isOpen, onClose, onSave }) => {
+const BillingFormModal = ({ isOpen, onClose, onSave, products = [] }) => {
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
       purchaser: "",
@@ -122,7 +123,45 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
                 <label className="text-xs font-semibold text-text-muted">
                   State Code
                 </label>
-                <input className={inputStyles} {...register("stateCode")} />
+                <select className={inputStyles} {...register("stateCode")}>
+                  <option value="">Select State</option>
+                  <option value="01-Jammu & Kashmir">01-Jammu & Kashmir (UT)</option>
+                  <option value="02-Himachal Pradesh">02-Himachal Pradesh</option>
+                  <option value="03-Punjab">03-Punjab</option>
+                  <option value="04-Chandigarh">04-Chandigarh (UT)</option>
+                  <option value="05-Uttarakhand">05-Uttarakhand</option>
+                  <option value="06-Haryana">06-Haryana</option>
+                  <option value="07-Delhi">07-Delhi (UT)</option>
+                  <option value="08-Rajasthan">08-Rajasthan</option>
+                  <option value="09-Uttar Pradesh">09-Uttar Pradesh</option>
+                  <option value="10-Bihar">10-Bihar</option>
+                  <option value="11-Sikkim">11-Sikkim</option>
+                  <option value="12-Arunachal Pradesh">12-Arunachal Pradesh</option>
+                  <option value="13-Nagaland">13-Nagaland</option>
+                  <option value="14-Manipur">14-Manipur</option>
+                  <option value="15-Mizoram">15-Mizoram</option>
+                  <option value="16-Tripura">16-Tripura</option>
+                  <option value="17-Meghalaya">17-Meghalaya</option>
+                  <option value="18-Assam">18-Assam</option>
+                  <option value="19-West Bengal">19-West Bengal</option>
+                  <option value="20-Jharkhand">20-Jharkhand</option>
+                  <option value="21-Odisha">21-Odisha</option>
+                  <option value="22-Chhattisgarh">22-Chhattisgarh</option>
+                  <option value="23-Madhya Pradesh">23-Madhya Pradesh</option>
+                  <option value="24-Gujarat">24-Gujarat</option>
+                  <option value="26-Dadra & Nagar Haveli and Daman & Diu">26-Dadra & Nagar Haveli and Daman & Diu (UT)</option>
+                  <option value="27-Maharashtra">27-Maharashtra</option>
+                  <option value="29-Karnataka">29-Karnataka</option>
+                  <option value="30-Goa">30-Goa</option>
+                  <option value="31-Lakshadweep">31-Lakshadweep (UT)</option>
+                  <option value="32-Kerala">32-Kerala</option>
+                  <option value="33-Tamil Nadu">33-Tamil Nadu</option>
+                  <option value="34-Puducherry">34-Puducherry (UT)</option>
+                  <option value="35-Andaman and Nicobar Islands">35-Andaman and Nicobar Islands (UT)</option>
+                  <option value="36-Telangana">36-Telangana</option>
+                  <option value="37-Andhra Pradesh">37-Andhra Pradesh</option>
+                  <option value="38-Ladakh">38-Ladakh (UT)</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">
@@ -162,9 +201,29 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
               </div>
               <div className="md:col-span-2">
                 <label className="text-xs font-semibold text-text-muted">
-                  Item Description
+                  Select Product
                 </label>
-                <input className={inputStyles} {...register("itemDescription")} />
+                <select
+                  className={inputStyles}
+                  {...register("productId", { required: true })}
+                  onChange={(e) => {
+                    const prodId = e.target.value;
+                    const prod = products.find((p) => String(p.id) === String(prodId));
+                    if (prod) {
+                      setValue("itemDescription", prod.name);
+                      setValue("rate", prod.price);
+                      setValue("hsnCode", prod.hsn || "8517");
+                    }
+                  }}
+                >
+                  <option value="">Choose a product from inventory</option>
+                  {products.map((prod) => (
+                    <option key={prod.id} value={prod.id}>
+                      {prod.name} (SKU: {prod.sku}) - Price: ₹{prod.price}
+                    </option>
+                  ))}
+                </select>
+                <input type="hidden" {...register("itemDescription")} />
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">
@@ -182,7 +241,13 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
                 <label className="text-xs font-semibold text-text-muted">
                   Units
                 </label>
-                <input className={inputStyles} {...register("units")} />
+                <select className={inputStyles} {...register("units")}>
+                  <option value="Pcs">Pcs (Pieces)</option>
+                  <option value="Box">Box</option>
+                  <option value="Set">Set</option>
+                  <option value="Kg">Kg</option>
+                  <option value="Mtr">Mtr (Meters)</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">
@@ -230,19 +295,37 @@ const BillingFormModal = ({ isOpen, onClose, onSave }) => {
                 <label className="text-xs font-semibold text-text-muted">
                   CGST %
                 </label>
-                <input type="number" className={inputStyles} {...register("cgst")} />
+                <select className={inputStyles} {...register("cgst")}>
+                  <option value="0">0%</option>
+                  <option value="2.5">2.5%</option>
+                  <option value="6">6%</option>
+                  <option value="9">9%</option>
+                  <option value="14">14%</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">
                   SGST %
                 </label>
-                <input type="number" className={inputStyles} {...register("sgst")} />
+                <select className={inputStyles} {...register("sgst")}>
+                  <option value="0">0%</option>
+                  <option value="2.5">2.5%</option>
+                  <option value="6">6%</option>
+                  <option value="9">9%</option>
+                  <option value="14">14%</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">
                   IGST %
                 </label>
-                <input type="number" className={inputStyles} {...register("igst")} />
+                <select className={inputStyles} {...register("igst")}>
+                  <option value="0">0%</option>
+                  <option value="5">5%</option>
+                  <option value="12">12%</option>
+                  <option value="18">18%</option>
+                  <option value="28">28%</option>
+                </select>
               </div>
               <div>
                 <label className="text-xs font-semibold text-text-muted">

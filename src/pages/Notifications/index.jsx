@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import {
   Activity,
   ArrowRight,
@@ -16,30 +16,37 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Badge from "../../components/ui/Badge";
 import SearchInput from "../../components/ui/SearchInput";
-import useStore from "../../store/useStore";
+import {
+  getNotifications,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  clearNotifications,
+  createNotification
+} from "../../services/notifications";
 
 const typeMeta = {
   success: {
     label: "Success",
-    accent: "from-emerald-500 to-emerald-600",
+    accent: "from-emerald-500 to-emerald-700",
     chip: "success",
     icon: CheckCheck,
   },
   warning: {
     label: "Warning",
-    accent: "from-amber-500 to-orange-500",
+    accent: "from-amber-500 to-amber-700",
     chip: "warning",
     icon: Filter,
   },
   danger: {
     label: "Critical",
-    accent: "from-red-500 to-rose-500",
+    accent: "from-red-500 to-rose-700",
     chip: "danger",
     icon: BellRing,
   },
   info: {
     label: "Info",
-    accent: "from-indigo-500 to-primary",
+    accent: "from-slate-500 to-slate-700",
     chip: "info",
     icon: Sparkles,
   },
@@ -62,51 +69,53 @@ const NotificationItem = ({ notification, meta, onToggleRead, onDismiss }) => {
 
   return (
     <div
-      className={`group overflow-hidden rounded-2xl border border-card-border bg-gradient-to-br from-surface via-surface to-surface-alt shadow-card transition hover:-translate-y-0.5 hover:shadow-2xl dark:border-slate-700 dark:bg-slate-900 ${
-        notification.read ? "opacity-80" : ""
+      className={`group overflow-hidden rounded-2xl border border-amber-500/10 bg-slate-950/50 backdrop-blur-md shadow-inner shadow-amber-500/5 transition duration-300 hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] hover:-translate-y-0.5 ${
+        notification.read ? "opacity-60 grayscale-[30%]" : ""
       }`}
     >
-      <div className={`h-1 bg-gradient-to-r ${meta.accent}`} />
+      <div className={`h-1 w-full bg-gradient-to-r ${meta.accent} opacity-80`} />
       <div className="flex gap-4 p-5">
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${meta.accent} text-white shadow-glow`}>
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${meta.accent} text-white shadow-[0_0_15px_rgba(245,158,11,0.2)]`}>
           <Icon size={20} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-base font-semibold text-text-main dark:text-slate-100">
+                <h3 className="text-base font-semibold text-white">
                   {notification.title}
                 </h3>
                 <Badge variant={meta.chip}>{meta.label}</Badge>
                 {!notification.read ? (
-                  <span className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  <span className="h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
                 ) : null}
               </div>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-text-muted dark:text-slate-400">
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400 font-light">
                 {notification.message}
               </p>
             </div>
-            <p className="flex shrink-0 items-center gap-2 text-xs text-text-muted dark:text-slate-500">
+            <p className="flex shrink-0 items-center gap-2 text-xs text-slate-500 font-medium">
               <Clock3 size={14} />
-              {formatTime(notification.time)}
+              {formatTime(notification.createdAt || notification.time)}
             </p>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100 focus-within:opacity-100 sm:opacity-100">
+            {!notification.read && (
               <button
                 type="button"
-                className="rounded-full border border-card-border bg-white px-3 py-1 text-xs font-semibold text-text-muted transition hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-500"
-              onClick={() => onToggleRead(notification.id)}
-            >
-              {notification.read ? "Mark unread" : "Mark read"}
-            </button>
+                className="rounded-full border border-amber-500/20 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-amber-500 transition hover:bg-amber-500 hover:text-slate-950 hover:shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+                onClick={() => onToggleRead(notification.id)}
+              >
+                Mark as read
+              </button>
+            )}
             <button
               type="button"
-                className="rounded-full border border-card-border bg-white px-3 py-1 text-xs font-semibold text-text-muted transition hover:border-danger hover:text-danger dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-500"
+              className="rounded-full border border-red-500/20 bg-slate-900/80 px-3 py-1.5 text-xs font-semibold text-red-400 transition hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.4)]"
               onClick={() => onDismiss(notification.id)}
             >
-              Dismiss
+              Dismiss alert
             </button>
           </div>
         </div>
@@ -116,18 +125,80 @@ const NotificationItem = ({ notification, meta, onToggleRead, onDismiss }) => {
 };
 
 const Notifications = () => {
-  const {
-    notifications,
-    markNotificationRead,
-    markAllNotificationsRead,
-    clearNotifications,
-    addNotification,
-    deleteNotification,
-  } = useStore();
+  const [notifications, setNotifications] = useState([]);
   const [query, setQuery] = useState("");
   const [tab, setTab] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
+  const [loading, setLoading] = useState(true);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data || []);
+    } catch (err) {
+      toast.error("Failed to fetch notifications");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  const handleToggleRead = async (id) => {
+    try {
+      await markAsRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      toast.error("Failed to mark as read");
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await markAllAsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      toast.success("All caught up");
+    } catch (err) {
+      toast.error("Failed to mark all as read");
+    }
+  };
+
+  const handleDismiss = async (id) => {
+    try {
+      await deleteNotification(id);
+      setNotifications(prev => prev.filter(n => n.id !== id));
+      toast.success("Alert dismissed");
+    } catch (err) {
+      toast.error("Failed to dismiss alert");
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      await clearNotifications();
+      setNotifications([]);
+      toast.success("Inbox cleared");
+    } catch (err) {
+      toast.error("Failed to clear inbox");
+    }
+  };
+
+  const handleSeedDemoAlert = async () => {
+    try {
+      await createNotification({
+        title: "Demo alert created",
+        message: "This is a live example notification to test the page actions.",
+        type: "info"
+      });
+      await fetchNotifications();
+      toast.success("Demo alert created");
+    } catch (err) {
+      toast.error("Failed to create demo alert");
+    }
+  };
 
   const filteredNotifications = useMemo(() => {
     const term = query.trim().toLowerCase();
@@ -146,7 +217,7 @@ const Notifications = () => {
     });
 
     return items.sort((a, b) => {
-      const diff = new Date(b.time).getTime() - new Date(a.time).getTime();
+      const diff = new Date(b.createdAt || b.time).getTime() - new Date(a.createdAt || a.time).getTime();
       return sortOrder === "newest" ? diff : -diff;
     });
   }, [notifications, query, sortOrder, tab, typeFilter]);
@@ -161,82 +232,66 @@ const Notifications = () => {
     (item) => item.read && item.type !== "danger" && item.type !== "warning",
   );
 
-  const handleSeedDemoAlert = () => {
-    addNotification({
-      title: "Demo alert created",
-      message: "This is a live example notification to test the page actions.",
-      type: "info",
-    });
-    toast.success("Demo notification added");
-  };
-
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-none bg-gradient-to-br from-[#0F172A] via-[#1D1745] to-[#4338CA] text-white shadow-2xl">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.08),transparent_28%)]" />
-        <div className="relative grid gap-6 px-6 py-6 lg:grid-cols-[1.4fr_0.9fr] lg:px-8 lg:py-8">
+      <Card className="overflow-hidden border border-amber-500/20 bg-[#020717] text-white shadow-[0_0_40px_rgba(245,158,11,0.05)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(245,158,11,0.15),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(239,68,68,0.08),transparent_40%)]" />
+        <div className="relative grid gap-6 px-6 py-8 lg:grid-cols-[1.4fr_0.9fr] lg:px-10 lg:py-10">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
               <Sparkles size={14} />
               Notification Center
             </div>
-            <h1 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight sm:text-4xl">
-              Structured alerts, cleaner priorities, and a professional inbox for your workspace.
+            <h1 className="mt-6 max-w-3xl text-3xl font-light tracking-tight leading-tight sm:text-4xl text-white">
+              Stay on top of your <span className="font-semibold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600">workspace</span>.
             </h1>
-            <p className="mt-3 max-w-2xl text-sm text-white/75 sm:text-base">
-              Keep critical events visible, sort out daily activity, and act fast with a more organized dashboard-style notification experience.
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 font-light">
+              Review critical system alerts, manage workflow updates, and keep your inbox clean with a focused premium interface.
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Button
-                className="bg-white text-[#1D1745] hover:bg-slate-100"
-                onClick={() => markAllNotificationsRead()}
+                className="bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:shadow-[0_0_25px_rgba(245,158,11,0.5)] border-none"
+                onClick={handleMarkAllRead}
               >
                 <CheckCheck size={16} />
                 Mark all read
               </Button>
               <Button
-                variant="ghost"
-                className="border-white/15 bg-white/10 text-white hover:bg-white/15 dark:border-white/15 dark:bg-white/10 dark:text-white"
+                variant="outline"
+                className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/50"
                 onClick={handleSeedDemoAlert}
               >
                 <BellRing size={16} />
-                Add demo alert
-              </Button>
-              <Button
-                variant="ghost"
-                className="border-white/15 bg-white/10 text-white hover:bg-white/15 dark:border-white/15 dark:bg-white/10 dark:text-white"
-                onClick={() => clearNotifications()}
-              >
-                <Trash2 size={16} />
-                Clear all
+                Generate demo alert
               </Button>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">Total</p>
-              <p className="mt-2 text-3xl font-semibold">{notifications.length}</p>
-              <p className="mt-1 text-sm text-white/65">Overall notification volume</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            <div className="rounded-2xl border border-amber-500/10 bg-slate-950/40 p-5 backdrop-blur shadow-inner shadow-amber-500/5 transition hover:bg-slate-900/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Total Inbox</p>
+              <p className="mt-3 text-3xl font-light text-white">{notifications.length}</p>
+              <p className="mt-1 text-xs text-slate-500">Historical volume</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">Unread</p>
-              <p className="mt-2 text-3xl font-semibold">{unreadCount}</p>
-              <p className="mt-1 text-sm text-white/65">Items awaiting review</p>
+            <div className="rounded-2xl border border-amber-500/10 bg-slate-950/40 p-5 backdrop-blur shadow-inner shadow-amber-500/5 transition hover:bg-slate-900/60 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10 text-amber-500"><BellRing size={48} /></div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 relative z-10">Unread</p>
+              <p className="mt-3 text-3xl font-semibold text-amber-400 relative z-10">{unreadCount}</p>
+              <p className="mt-1 text-xs text-slate-500 relative z-10">Needs attention</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">Critical</p>
-              <p className="mt-2 text-3xl font-semibold">{criticalCount}</p>
-              <p className="mt-1 text-sm text-white/65">Warnings and critical alerts</p>
+            <div className="rounded-2xl border border-red-500/10 bg-slate-950/40 p-5 backdrop-blur shadow-inner shadow-red-500/5 transition hover:bg-slate-900/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Critical</p>
+              <p className="mt-3 text-3xl font-light text-white">{criticalCount}</p>
+              <p className="mt-1 text-xs text-slate-500">High priority items</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-              <p className="text-xs uppercase tracking-[0.18em] text-white/60">Latest</p>
-              <p className="mt-2 text-lg font-semibold">
+            <div className="rounded-2xl border border-amber-500/10 bg-slate-950/40 p-5 backdrop-blur shadow-inner shadow-amber-500/5 transition hover:bg-slate-900/60">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Latest Event</p>
+              <p className="mt-3 text-sm font-medium text-amber-300 truncate">
                 {newestUnread ? newestUnread.title : "All clear"}
               </p>
-              <p className="mt-1 text-sm text-white/65">
-                {newestUnread ? formatTime(newestUnread.time) : "Nothing pending right now"}
+              <p className="mt-1 text-xs text-slate-500">
+                {newestUnread ? formatTime(newestUnread.createdAt || newestUnread.time) : "Nothing pending right now"}
               </p>
             </div>
           </div>
@@ -244,56 +299,58 @@ const Notifications = () => {
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-[1.45fr_0.75fr]">
-        <Card className="overflow-hidden p-0">
-          <div className="border-b border-card-border px-5 py-5 dark:border-slate-700">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <Card className="overflow-hidden p-0 border-amber-500/10 bg-slate-950/50">
+          <div className="border-b border-amber-500/10 px-6 py-6 bg-slate-900/30">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-slate-50 to-indigo-50 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
+                <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400 ring-1 ring-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
                   <Activity size={14} />
-                  Live inbox
+                  Live Activity Stream
                 </div>
-                <h2 className="mt-3 text-lg font-semibold text-text-main dark:text-slate-100">
-                  Notifications and activity stream
+                <h2 className="mt-4 text-xl font-medium text-white">
+                  Inbox Overview
                 </h2>
-                <p className="mt-1 text-sm text-text-muted dark:text-slate-400">
-                  {unreadCount} unread, {notifications.length} total, arranged by importance and time.
+                <p className="mt-1.5 text-sm text-slate-400 font-light">
+                  {unreadCount} pending review, {notifications.length} total messages.
                 </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="min-w-[240px]">
+                <div className="min-w-[260px]">
                   <SearchInput
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Search notifications"
+                    placeholder="Search titles or messages..."
                   />
                 </div>
-                <Button variant="ghost" onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest") }>
-                  <Clock3 size={16} />
-                  {sortOrder === "newest" ? "Newest first" : "Oldest first"}
+                <Button variant="outline" className="border-amber-500/20 text-slate-300" onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest") }>
+                  <Clock3 size={16} className="text-amber-500" />
+                  {sortOrder === "newest" ? "Newest First" : "Oldest First"}
                 </Button>
               </div>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-6 flex flex-wrap gap-2">
               {[
-                { key: "all", label: "All" },
+                { key: "all", label: "All Items" },
                 { key: "unread", label: "Unread" },
                 { key: "read", label: "Read" },
               ].map((option) => (
                 <button
                   key={option.key}
                   type="button"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`rounded-full px-5 py-2 text-xs font-bold transition duration-300 ${
                     tab === option.key
-                      ? "bg-primary text-white shadow-glow"
-                      : "border border-card-border bg-gradient-to-r from-surface to-surface-alt text-text-muted hover:text-text-main dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                      ? "bg-amber-500/20 text-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-500/30"
+                      : "bg-slate-900/50 text-slate-400 hover:text-white hover:bg-slate-800"
                   }`}
                   onClick={() => setTab(option.key)}
                 >
                   {option.label}
                 </button>
               ))}
+              
+              <div className="w-px h-6 bg-amber-500/10 mx-2 self-center hidden sm:block"></div>
 
               {[
                 { key: "all", label: "All Types" },
@@ -305,10 +362,10 @@ const Notifications = () => {
                 <button
                   key={option.key}
                   type="button"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition duration-300 ${
                     typeFilter === option.key
-                      ? "bg-slate-900 text-white shadow-card dark:bg-slate-100 dark:text-slate-900"
-                      : "border border-card-border bg-gradient-to-r from-surface to-surface-alt text-text-muted hover:text-text-main dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:text-slate-100"
+                      ? "bg-slate-800 text-white shadow-inner shadow-white/5 ring-1 ring-slate-600"
+                      : "text-slate-500 hover:text-slate-300 hover:bg-slate-900"
                   }`}
                   onClick={() => setTypeFilter(option.key)}
                 >
@@ -318,25 +375,27 @@ const Notifications = () => {
             </div>
           </div>
 
-          <div className="space-y-6 px-5 py-5">
-            {filteredNotifications.length > 0 ? (
+          <div className="space-y-6 px-6 py-6">
+            {loading ? (
+               <div className="flex justify-center p-10"><div className="w-8 h-8 rounded-full border-2 border-amber-500 border-t-transparent animate-spin"></div></div>
+            ) : filteredNotifications.length > 0 ? (
               <>
                 {priorityNotifications.length > 0 ? (
-                  <section className="space-y-3">
+                  <section className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-text-muted dark:text-slate-400">
-                          Priority inbox
+                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-amber-500/80">
+                          Priority Inbox
                         </h3>
-                        <p className="text-xs text-text-muted dark:text-slate-500">
-                          Unread and critical notifications appear here first.
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Unread and critical alerts demanding attention.
                         </p>
                       </div>
-                      <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300 dark:ring-amber-500/20">
-                        {priorityNotifications.length}
+                      <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-400 ring-1 ring-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                        {priorityNotifications.length} items
                       </span>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {priorityNotifications.map((notification) => {
                         const meta = typeMeta[notification.type] || typeMeta.info;
                         return (
@@ -344,11 +403,8 @@ const Notifications = () => {
                             key={notification.id}
                             notification={notification}
                             meta={meta}
-                            onToggleRead={markNotificationRead}
-                            onDismiss={(id) => {
-                              deleteNotification(id);
-                              toast.success("Notification dismissed");
-                            }}
+                            onToggleRead={handleToggleRead}
+                            onDismiss={handleDismiss}
                           />
                         );
                       })}
@@ -357,21 +413,21 @@ const Notifications = () => {
                 ) : null}
 
                 {regularNotifications.length > 0 ? (
-                  <section className="space-y-3">
-                    <div className="flex items-center justify-between">
+                  <section className="space-y-4 mt-8">
+                    <div className="flex items-center justify-between border-t border-amber-500/10 pt-8">
                       <div>
-                        <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-text-muted dark:text-slate-400">
-                          Activity archive
+                        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">
+                          Activity Archive
                         </h3>
-                        <p className="text-xs text-text-muted dark:text-slate-500">
-                          Read items and lower-priority updates live here.
+                        <p className="mt-1 text-[11px] text-slate-500">
+                          Cleared items and standard background updates.
                         </p>
                       </div>
-                      <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700">
-                        {regularNotifications.length}
+                      <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-slate-400 ring-1 ring-slate-800">
+                        {regularNotifications.length} items
                       </span>
                     </div>
-                    <div className="space-y-3">
+                    <div className="space-y-4 opacity-80">
                       {regularNotifications.map((notification) => {
                         const meta = typeMeta[notification.type] || typeMeta.info;
                         return (
@@ -379,11 +435,8 @@ const Notifications = () => {
                             key={notification.id}
                             notification={notification}
                             meta={meta}
-                            onToggleRead={markNotificationRead}
-                            onDismiss={(id) => {
-                              deleteNotification(id);
-                              toast.success("Notification dismissed");
-                            }}
+                            onToggleRead={handleToggleRead}
+                            onDismiss={handleDismiss}
                           />
                         );
                       })}
@@ -392,25 +445,27 @@ const Notifications = () => {
                 ) : null}
               </>
             ) : (
-              <div className="flex min-h-[360px] flex-col items-center justify-center rounded-3xl border border-dashed border-card-border bg-gradient-to-br from-surface to-surface-alt px-6 py-10 text-center dark:border-slate-700 dark:bg-slate-900/60">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-soft ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-                  <BellRing className="text-primary" size={28} />
+              <div className="flex min-h-[400px] flex-col items-center justify-center rounded-[2rem] border border-dashed border-amber-500/20 bg-slate-950/30 px-6 py-12 text-center shadow-inner shadow-amber-500/5">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-900 shadow-[0_0_30px_rgba(245,158,11,0.1)] ring-1 ring-amber-500/20">
+                  <BellRing className="text-amber-500" size={32} />
                 </div>
-                <h3 className="mt-4 text-xl font-semibold text-text-main dark:text-slate-100">
-                  No notifications found
+                <h3 className="mt-6 text-2xl font-light text-white">
+                  No alerts present
                 </h3>
-                <p className="mt-2 max-w-md text-sm leading-6 text-text-muted dark:text-slate-400">
-                  Try a different search term or filter, or add a demo alert to test the page actions.
+                <p className="mt-3 max-w-sm text-sm leading-6 text-slate-400 font-light">
+                  Your inbox is completely clear. You can trigger a demo alert to visualize the layout.
                 </p>
-                <div className="mt-5 flex flex-wrap justify-center gap-3">
-                  <Button onClick={handleSeedDemoAlert}>
+                <div className="mt-8 flex flex-wrap justify-center gap-3">
+                  <Button className="bg-amber-500 text-slate-950 hover:bg-amber-400" onClick={handleSeedDemoAlert}>
                     <Sparkles size={16} />
-                    Add demo alert
+                    Simulate alert
                   </Button>
-                  <Button variant="ghost" onClick={() => setQuery("")}>
-                    <X size={16} />
-                    Reset search
-                  </Button>
+                  {query && (
+                    <Button variant="outline" className="border-amber-500/20 text-slate-300" onClick={() => setQuery("")}>
+                      <X size={16} />
+                      Clear search
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -418,67 +473,55 @@ const Notifications = () => {
         </Card>
 
         <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex items-center justify-between">
+          <Card className="p-6 border-amber-500/10 bg-slate-950/60 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="text-base font-semibold text-text-main dark:text-slate-100">Quick Actions</h3>
-                <p className="mt-1 text-sm text-text-muted dark:text-slate-400">Manage the inbox in one click.</p>
+                <h3 className="text-sm font-bold uppercase tracking-[0.1em] text-white">Quick Flow</h3>
+                <p className="mt-1 text-xs text-slate-400 font-light">Batch operations</p>
               </div>
-              <ShieldAlert className="text-primary" size={20} />
+              <ShieldAlert className="text-amber-500 drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]" size={20} />
             </div>
-            <div className="mt-4 grid gap-3">
-              <Button onClick={() => markAllNotificationsRead()}>
-                <CheckCheck size={16} />
-                Mark all read
+            <div className="grid gap-3">
+              <Button onClick={handleMarkAllRead} className="bg-slate-900 border border-amber-500/20 hover:border-amber-500/50 text-white w-full justify-start">
+                <CheckCheck size={16} className="text-amber-500 mr-2" />
+                Clear unread badges
               </Button>
-              <Button variant="ghost" onClick={handleSeedDemoAlert}>
-                <BellRing size={16} />
-                Add demo alert
-              </Button>
-              <Button variant="ghost" onClick={() => clearNotifications()}>
-                <Trash2 size={16} />
-                Clear notifications
+              <Button onClick={handleClearAll} variant="outline" className="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:border-red-500/40 w-full justify-start">
+                <Trash2 size={16} className="mr-2" />
+                Delete all history
               </Button>
             </div>
           </Card>
 
-          <Card className="p-5">
-            <h3 className="text-base font-semibold text-text-main dark:text-slate-100">Inbox Rules</h3>
-            <div className="mt-4 space-y-4 text-sm">
-              <div className="flex items-start gap-3">
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-500" />
+          <Card className="p-6 border-amber-500/10 bg-slate-950/60 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+            <h3 className="text-sm font-bold uppercase tracking-[0.1em] text-white mb-5">Event Legend</h3>
+            <div className="space-y-5 text-sm">
+              <div className="flex items-start gap-4">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30">
+                  <CheckCheck size={12} />
+                </div>
                 <div>
-                  <p className="font-semibold text-text-main dark:text-slate-100">Success</p>
-                  <p className="text-text-muted dark:text-slate-400">Completed workflows and saved records.</p>
+                  <p className="font-semibold text-white">Success</p>
+                  <p className="mt-0.5 text-xs text-slate-400 font-light">Confirmed actions & saves.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-amber-500" />
+              <div className="flex items-start gap-4">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30">
+                  <Filter size={12} />
+                </div>
                 <div>
-                  <p className="font-semibold text-text-main dark:text-slate-100">Warning</p>
-                  <p className="text-text-muted dark:text-slate-400">Needs attention, but not blocked yet.</p>
+                  <p className="font-semibold text-white">Warning</p>
+                  <p className="mt-0.5 text-xs text-slate-400 font-light">Requires manual review soon.</p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <span className="mt-1 h-2.5 w-2.5 rounded-full bg-indigo-500" />
-                <div>
-                  <p className="font-semibold text-text-main dark:text-slate-100">Info</p>
-                  <p className="text-text-muted dark:text-slate-400">Routine system updates and activity.</p>
+              <div className="flex items-start gap-4">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-red-500/20 text-red-400 ring-1 ring-red-500/30">
+                  <BellRing size={12} />
                 </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <ArrowRight size={18} />
-              </div>
-              <div>
-                <h3 className="text-base font-semibold text-text-main dark:text-slate-100">Fast review flow</h3>
-                <p className="text-sm text-text-muted dark:text-slate-400">
-                  Use the inbox filters to narrow the list and handle alerts in batches.
-                </p>
+                <div>
+                  <p className="font-semibold text-white">Critical</p>
+                  <p className="mt-0.5 text-xs text-slate-400 font-light">Immediate action required.</p>
+                </div>
               </div>
             </div>
           </Card>
